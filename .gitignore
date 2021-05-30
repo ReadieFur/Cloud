@@ -1,0 +1,10 @@
+.vscode/
+testing/
+tmp/
+.exclude/
+*.js
+*.map
+*.css
+node_modules/
+pnpm-lock.yaml
+/overlay/
