@@ -12,9 +12,7 @@
         </a>
     </div>
     <div class="navigationContainer">
-        <a href="<?php echo $WEB_ROOT ?>/browser/">Browser</a>
-        <a href="<?php echo $WEB_ROOT ?>/view/default/">Default</a>
-        <a href="<?php echo $WEB_ROOT ?>/edit/">Editor</a>
+        <a href="<?php echo $WEB_ROOT ?>/files/">My Files</a>
         <div class="naviDropdown">
             <a>Account +</a>
             <div class="dropdownContent">
