@@ -1,0 +1,155 @@
+.leftRight
+{
+    > :last-child
+    {
+        bottom: unset;
+    }
+}
+
+#search
+{
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translate(0, -50%);
+
+
+    input
+    {
+        border: 1px solid rgba(var(--foregroundColour), 1);
+        box-sizing: content-box;
+        height: 20px;
+        text-transform: none;
+    }
+
+    input[type="text"]
+    {
+        border-right: 0;
+        border-radius: 4px 0 0 4px;
+        padding: 4px 6px;
+        width: auto;
+    }
+
+    input[type="submit"]
+    {
+        border-radius: 0 4px 4px 0;
+        outline: none;
+        transition: ease .4s;
+        transition-property: background-color, color;
+        user-select: none;
+        padding: 4px 8px;
+    }
+}
+
+#files
+{
+    padding-top: 20px;
+    width: 100%;
+    border-collapse: collapse;
+
+    th, td
+    {
+        //width: (100/5)+0%;
+        padding: 15px 10px;
+    }
+
+    th
+    {
+        text-align: left;
+        font-weight: bold;
+        border-bottom: 2px solid rgba(var(--foregroundColour), 1);
+    }
+
+    td
+    {
+        border-bottom: 1px solid rgba(var(--foregroundColour), 1);
+
+        input
+        {
+            &[type=text]
+            {
+                outline-width: 0;
+                font-weight: normal;
+                width: 90%;
+                border: 0;
+                background-color: transparent;
+                font-size: 1rem;
+                outline: none;
+                outline-width: 0;
+                padding: 10px 10px;
+                border-radius: 10px;
+
+                &:hover, &:focus
+                {
+                    background-color: rgba(var(--foregroundColour), 0.1);
+                }
+            }
+        }
+    }
+
+    .listItem
+    {
+        $listItemIntitialHeight: 100px;
+        min-height: $listItemIntitialHeight;
+        height: $listItemIntitialHeight;
+        cursor: pointer;
+
+        &:hover
+        {
+            background-color: rgba(var(--backgroundAltColour), 1);
+        }
+    }
+
+    .nameColumn
+    {
+        text-align: left;
+        font-weight: bold;
+        width: (100/3)+0%;
+
+        &:not(th)
+        {
+            > input
+            {
+                font-weight: bold;
+                font-size: 1.32rem;
+            }
+        }
+    }
+
+    .typeColumn, .dateColumn, .sizeColumn, .optionsColumn
+    {
+        text-align: left;
+        width: (100/6)+0%;
+
+        &:not(th)
+        {
+            font-weight: normal;
+        }
+    }
+
+    .optionsColumn
+    {
+        //text-align: right;
+    }
+}
+
+#resultsText
+{
+    font-size: small;
+    text-align: center;
+}
+
+#pages
+{
+    width: max-content;
+    position: relative;
+    top: 15px;
+    left: 50%;
+    transform: translate(-50%);
+
+    > button
+    {
+        width: 45px;
+        height: 45px;
+    }
+}
