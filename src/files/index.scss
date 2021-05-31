@@ -1,3 +1,12 @@
+#unfocus
+{
+    opacity: 0;
+    position: absolute;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+}
+
 #fileDrop
 {
     position: absolute;
@@ -143,12 +152,15 @@
         }
     }
 
+    //Split into 10 segments
+    $segment: 100/10;
+    //This isnt quite right but it should do.
     .nameColumn
     {
         text-align: left;
         font-weight: bold;
         //Fix this.
-        width: (100/3)+0%;
+        width: ($segment*5)+0%;
 
         &:not(th)
         {
@@ -160,10 +172,24 @@
         }
     }
 
+    .typeColumn
+    {
+        > input
+        {
+            //TMP
+            pointer-events: none;
+        }
+    }
+
+    .typeColumn, .dateColumn, .sizeColumn
+    {
+        width: ($segment*1.25)+0%;
+    }
+
     .typeColumn, .dateColumn, .sizeColumn, .optionsColumn
     {
         text-align: left;
-        width: (100/6)+0%;
+        //width: (100/10)+0%;
 
         &:not(th)
         {
@@ -174,6 +200,7 @@
     .optionsColumn
     {
         //text-align: right;
+        //width: ($segment*1.25)+0%;
     }
 }
 
