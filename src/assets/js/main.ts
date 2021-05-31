@@ -307,6 +307,57 @@ export class Main
         return new Promise(r => setTimeout(r, milliseconds));
     }
 
+    //https://stackoverflow.com/questions/15900485/correct-way-to-convert-size-in-bytes-to-kb-mb-gb-in-javascript
+    public static FormatBytes(bytes: number, decimals = 2): string
+    {
+        if (bytes === 0) { return '0 Bytes'; }
+
+        var k = 1024;
+        var dm = decimals < 0 ? 0 : decimals;
+        var sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+
+        var i = Math.floor(Math.log(bytes) / Math.log(k));
+
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+    }
+
+    public static GetStatusCodeMessage(code: number)
+    {
+        switch(code)
+        {
+            case 400: return `Bad Request`;
+            case 401: return `Unauthorized`;
+            case 402: return `Payment Required`;
+            case 403: return `Forbidden`;
+            case 404: return `Not Found`;
+            case 405: return `Method Not Allowed`;
+            case 406: return `Not Acceptable`;
+            case 407: return `Proxy Authentication Required`;
+            case 408: return `Request Timeout`;
+            case 409: return `Conflict`;
+            case 410: return `Gone`;
+            case 411: return `Length Required`;
+            case 412: return `Precondition Failed`;
+            case 413: return `Payload Too Large`;
+            case 414: return `URI Too Long`;
+            case 415: return `Unsupported Media Type`;
+            case 416: return `Range Not Satisfiable`;
+            case 417: return `Range Expectation Failed`;
+            case 418: return `I'm a teapot`;
+            case 421: return `Misdirected Request`;
+            case 422: return `Unprocessable Entity`;
+            case 423: return `Locked`;
+            case 424: return `Failed Dependency`;
+            case 425: return `Too Early`;
+            case 426: return `Upgrade Required`;
+            case 428: return `Precondition Required`;
+            case 429: return `Too Many Requests`;
+            case 431: return `Request Header Fields Too Large`;
+            case 451: return `Unavailable For Legal Reasons`;
+            default: return "Unknown error";
+        }
+    }
+
     public static GetPHPErrorMessage(error: any): string
     {
         switch (error)
@@ -349,6 +400,8 @@ export class Main
                 return "Invalid password.";
             case "INVALID_OTP":
                 return "Invalid OTP.";
+            case "INVALID_PERMISSIONS":
+                return "Insufficient permissions.";
             case "VERIFICATION_FAILED":
                 return "Verification failed.";
             case "MAIL_ERROR":

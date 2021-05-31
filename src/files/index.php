@@ -17,11 +17,29 @@
 </head>
 <header id="header"><?php echo execAndRead("{$SITE_ROOT}/assets/php/header.php"); ?></header>
 <body>
-<section id="filesList">
+    <!--This drop box is just cosmetic, the event is attatched to the window-->
+    <!--<div id="fileDrop">
+        <div class="center">
+            <h3>Drop files anywhere to upload.</h3>
+        </div>
+    </div>-->
+    <section id="filesList">
         <div class="leftRight">
-            <h4>My Files</h4>
+            <table>
+                <tbody>
+                    <tr>
+                        <td>
+                            <h4 id="pageTitle">My Files</h4>
+                        </td>
+                        <td>
+                            <form id="uploadForm">
+                                <input id="inputFile" type="file">
+                            </form>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
             <form id="search">
-                <!--Can't have the space between these two elements here, I could make a workaround for this but I can't be arsed.-->
                 <input id="searchText" type="text" placeholder="Search"><input class="asButton" type="submit" value="Search">
             </form>
         </div>
@@ -31,24 +49,36 @@
                 <tr>
                     <th class="projectColumn">Name</th>
                     <th class="descriptionColumn">Type</th>
-                    <th class="sizeColumn">Size</th>
                     <th class="dateColumn">Date Modified</th>
+                    <th class="sizeColumn">Size</th>
                     <th class="optionsColumn">Options</th>
                 </tr>
             </tbody>
-            <tbody>
-                <tr class="listItem" id="FILE_ID">
+            <tbody id="uploadsBody">
+                <!--<tr class="listItem uploading" id="FILE_ID">
                     <td class="nameColumn"><input type="text" value="Untitled file"></td>
                     <td class="typeColumn"><input type="text" value="mkv"></td>
                     <td class="dateColumn">30/05/2021</td>
                     <td class="sizeColumn">128mb</td>
                     <td class="optionsColumn">
                         <span>
-                            <!--Add SVG images here-->
+                            <--Add SVG images here->
                         </span>
                     </td>
+                </tr>-->
+            </tbody>
+            <tbody id="filesBody">
+                <!--<tr class="listItem" id="FILE_ID">
+                    <td class="nameColumn"><input type="text" value="Untitled file"></td>
+                    <td class="typeColumn"><input type="text" value="mkv"></td>
+                    <td class="dateColumn">30/05/2021</td>
+                    <td class="sizeColumn">128mb</td>
+                    <td class="optionsColumn">
+                        <span>
+                            <--Add SVG images here->
+                        </span>
                     </td>
-                </tr>
+                </tr>-->
             </tbody>
         </table>
         <div id="pages" class="joinButtons"></div>

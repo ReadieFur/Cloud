@@ -1,8 +1,35 @@
+#fileDrop
+{
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    z-index: 999;
+    pointer-events: none;
+    background-color: rgba(var(--backgroundAltColour), 0.5);
+    backdrop-filter: blur(4px);
+}
+
 .leftRight
 {
     > :last-child
     {
         bottom: unset;
+    }
+}
+
+#pageTitle
+{
+    margin: 15px 10px 15px 5px;
+}
+
+#uploadForm
+{
+    > #inputFile
+    {
+        border: none;
+        font-weight: normal;
     }
 }
 
@@ -98,12 +125,29 @@
         {
             background-color: rgba(var(--backgroundAltColour), 1);
         }
+
+        &.uploading
+        {
+            //background: linear-gradient(90deg, rgba(var(--accentColour), 1) 50%, transparent 50%);
+
+            &:hover
+            {
+                //background-color: rgba(var(--backgroundAltColour), 1);
+                background-color: red;
+            }
+
+            input
+            {
+                pointer-events: none;
+            }
+        }
     }
 
     .nameColumn
     {
         text-align: left;
         font-weight: bold;
+        //Fix this.
         width: (100/3)+0%;
 
         &:not(th)
