@@ -17,6 +17,7 @@
 </head>
 <header id="header"><?php echo execAndRead("{$SITE_ROOT}/assets/php/header.php"); ?></header>
 <body>
+    <input id="unfocus">
     <!--This drop box is just cosmetic, the event is attatched to the window-->
     <!--<div id="fileDrop">
         <div class="center">
@@ -58,12 +59,13 @@
                 <!--<tr class="listItem uploading" id="FILE_ID">
                     <td class="nameColumn"><input type="text" value="Untitled file"></td>
                     <td class="typeColumn"><input type="text" value="mkv"></td>
-                    <td class="dateColumn">30/05/2021</td>
+                    <td class="dateColumn">30/05/2021 - 13:05</td>
                     <td class="sizeColumn">128mb</td>
                     <td class="optionsColumn">
-                        <span>
-                            <--Add SVG images here->
-                        </span>
+                        <div class="joinButtons">
+                            <button>Download</button>
+                            <button>Public</button>
+                        </div>
                     </td>
                 </tr>-->
             </tbody>
@@ -74,9 +76,10 @@
                     <td class="dateColumn">30/05/2021</td>
                     <td class="sizeColumn">128mb</td>
                     <td class="optionsColumn">
-                        <span>
-                            <--Add SVG images here->
-                        </span>
+                        <div class="joinButtons">
+                            <button>Download</button>
+                            <button>Public</button>
+                        </div>
                     </td>
                 </tr>-->
             </tbody>
