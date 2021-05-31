@@ -1,9 +1,10 @@
 import { Main, ReturnData } from "../assets/js/main.js";
 
-class Home
+class Files
 {
     private readonly resultsPerPage = 20;
 
+    private unfocus: HTMLInputElement;
     private search: HTMLFormElement;
     private searchText: HTMLInputElement;
     private filesTable: HTMLTableElement;
@@ -22,6 +23,7 @@ class Home
     {
         new Main();
 
+        this.unfocus = Main.ThrowIfNullOrUndefined(document.querySelector("#unfocus"));
         this.search = Main.ThrowIfNullOrUndefined(document.querySelector("#search"));
         this.searchText = Main.ThrowIfNullOrUndefined(document.querySelector("#searchText"));
         this.filesTable = Main.ThrowIfNullOrUndefined(document.querySelector("#files"));
@@ -314,6 +316,22 @@ class Home
         nameInput.type = "text";
         nameInput.maxLength = 255;
         nameInput.value = file.name;
+        nameInput.addEventListener("keypress", (ev) => { if (ev.key === "Enter") { this.unfocus.focus(); } });
+        nameInput.addEventListener("input", () => { nameInput.value = Files.GetValidFileName(nameInput.value.substr(0, 24)); });
+        nameInput.addEventListener("focusout", () =>
+        {
+            if (file.name !== nameInput.value)
+            {
+                nameInput.value = file.name = Files.GetValidFileName(nameInput.value.substr(0, 24));
+
+                this.FilesPHP(
+                {
+                    method: "updateFile",
+                    data: file,
+                    success: (response) => { if (response.error) { Main.Alert(Main.GetPHPErrorMessage(response.data)); } }
+                });
+            }
+        });
         nameColumn.appendChild(nameInput);
         tr.appendChild(nameColumn);
 
@@ -323,6 +341,22 @@ class Home
         typeInput.type = "text";
         typeInput.maxLength = 24;
         typeInput.value = file.type;
+        /*typeInput.addEventListener("keypress", (ev) => { if (ev.key === "Enter") { this.unfocus.focus(); } });
+        typeInput.addEventListener("input", () => { typeInput.value = Files.GetValidFileName(typeInput.value.substr(0, 24)); });
+        typeInput.addEventListener("focusout", () =>
+        {
+            if (file.name !== typeInput.value)
+            {
+                typeInput.value = file.name = Files.GetValidFileName(typeInput.value.substr(0, 24));
+
+                this.FilesPHP(
+                {
+                    method: "updateFile",
+                    data: file,
+                    success: (response) => { if (response.error) { Main.Alert(Main.GetPHPErrorMessage(response.data)); } }
+                });
+            }
+        });*/
         typeColumn.appendChild(typeInput);
         tr.appendChild(typeColumn);
 
@@ -344,6 +378,30 @@ class Home
 
         var optionsColumn = document.createElement("td");
         optionsColumn.classList.add("optionsColumn");
+        var optionsContainer = document.createElement("div");
+        optionsContainer.classList.add("joinButtons");
+        var downloadButton = document.createElement("button");
+        downloadButton.innerText = "Download";
+        downloadButton.addEventListener("click", () => { window.open(`${Main.WEB_ROOT}/files/storage/${file.id}`); });
+        optionsContainer.appendChild(downloadButton);
+        var shareButton = document.createElement("button");
+        shareButton.innerText = "Public";
+        shareButton.addEventListener("click", () =>
+        {
+            file.isPrivate = file.isPrivate === '1' ? '0' : '1';
+            if (file.isPrivate === '1') { shareButton.classList.remove("active"); }
+            else { shareButton.classList.add("active"); }
+            this.FilesPHP(
+            {
+                method: "updateFile",
+                data: file,
+                success: (response) => { if (response.error) { Main.Alert(Main.GetPHPErrorMessage(response.data)); } }
+            });
+        });
+        if (file.isPrivate === '1') { shareButton.classList.remove("active"); }
+        else { shareButton.classList.add("active"); }
+        optionsContainer.appendChild(shareButton);
+        optionsColumn.appendChild(optionsContainer);
         tr.appendChild(optionsColumn);
         
         return tr;
@@ -351,7 +409,7 @@ class Home
 
     private FilesPHP(params:
     {
-        method: "getFiles",
+        method: "getFiles" | "updateFile",
         data?: object
         success?: (response: ReturnData) => any
         error?: (ex: any) => any
@@ -375,6 +433,11 @@ class Home
             error: params.error??Main.ThrowAJAXJsonError,
             success: params.success
         });
+    }
+
+    private static GetValidFileName(fileName: string): string
+    {
+        return fileName.replace(/[\\\/:*?\"<>|]/, "");
     }
 
     private WindowMessageEvent(ev: MessageEvent<any>)
@@ -408,7 +471,7 @@ class Home
         }
     }
 }
-new Home();
+new Files();
 
 interface IFilesFilter
 {

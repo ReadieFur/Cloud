@@ -1,7 +1,4 @@
 <?php
-
-use GuzzleHttp\Psr7\Request;
-
 require_once __DIR__ . '/../../../api/account/accountFunctions.php';
 require_once __DIR__ . '/../../../api/database/databaseHelper.php';
 require_once __DIR__ . '/../../../api/database/readie/users.php';
@@ -35,17 +32,12 @@ class Files
         if ($sessionValid->error) { return $sessionValid; }
         else if (!$sessionValid->data) { return new ReturnData("SESSION_EXPIRED", true); }
 
-        $account = AccountFunctions::GetUsersByID(array($_COOKIE['READIE_UID']));
-        if ($account->error) { return $account; }
-        else if (!isset($account->data[$_COOKIE['READIE_UID']])) { return new ReturnData("ACCOUNT_NOT_FOUND", true); }
-        $user = $account->data[$_COOKIE['READIE_UID']];
-
-        $permissions = $this->permissionsTable->Select(array('uid'=>$user->uid));
+        $permissions = $this->permissionsTable->Select(array('uid'=>$_COOKIE['READIE_UID']));
         if ($permissions->error) { return $permissions; }
         else if (count($permissions->data) <= 0)
         {
-            $newPermissionsProfile = $this->permissionsTable->Insert(array('uid'=>$user->uid));
-            if ($newPermissionsProfile->error || !$newPermissionsProfile->data) { return $account; }
+            $newPermissionsProfile = $this->permissionsTable->Insert(array('uid'=>$_COOKIE['READIE_UID']));
+            if ($newPermissionsProfile->error || !$newPermissionsProfile->data) { return $newPermissionsProfile; }
             return new ReturnData("INVALID_PERMISSIONS", true);
         }
         else if ($permissions->data[0]->files == "0")
@@ -73,7 +65,7 @@ class Files
             //$tableData = new cloud_files();
             $tableData = array(
                 'id'=>$id,
-                'uid'=>$user->uid,
+                'uid'=>$_COOKIE['READIE_UID'],
                 'name'=>$fileName,
                 'type'=>$fileType,
                 'size'=>$_files['inputFile']['size'],
@@ -85,7 +77,7 @@ class Files
             if ($response->error) { return $response; }
             else if ($response->data !== true) { return new ReturnData(true, true); }
 
-            if (!move_uploaded_file($_files['inputFile']['tmp_name'], __DIR__ . '/storage/' . $id . ''))
+            if (!move_uploaded_file($_files['inputFile']['tmp_name'], __DIR__ . '/storage/userfiles/' . $id . ''))
             {
                 //If this fails then something critical has happened.
                 $this->filesTable->Delete($tableData);
@@ -107,12 +99,48 @@ class Files
                     return $this->GetFiles($query['data']);
                 /*case 'uploadFile':
                     Handled in the previous if clause.*/
+                case 'updateFile':
+                    return $this->UpdateFile($query['data']);
                 /*case 'viewFile':
                     //Handled before the user login.*/
                 default:
                     return new ReturnData('INVALID_METHOD', true);
             }
         }
+    }
+
+    private function UpdateFile(array $_data)
+    {
+        if (
+            !isset($_data['id']) ||
+            !isset($_data['uid']) ||
+            !isset($_data['name']) ||
+            !isset($_data['type']) ||
+            !isset($_data['size']) ||
+            !isset($_data['isPrivate']) ||
+            !isset($_data['dateAltered'])
+        )
+        { return new ReturnData('INVALID_DATA', true); }
+
+        $files = $this->filesTable->Select(array('id'=>$_data['id']));
+        if ($files->error) { return $files; }
+        else if (!isset($files->data[0])) { return new ReturnData('NO_RESULTS', true); }
+        else if ($_COOKIE['READIE_UID'] !== $files->data[0]->uid) { return new ReturnData('INVALID_PERMISSIONS', true); }
+
+        $updatedFileResponse = $this->filesTable->Update(
+            array(
+                'name'=>$_data['name'],
+                'type'=>$_data['type'],
+                'isPrivate'=>$_data['isPrivate'],
+                'dateAltered'=>Time()
+            ),
+            array(
+                'id'=>$files->data[0]->id
+            )
+        );
+        if ($updatedFileResponse->error) { return $updatedFileResponse; }
+        else if ($updatedFileResponse->data !== true) { return new ReturnData($updatedFileResponse->data, true); }
+        return new ReturnData(true);
     }
 
     private function GetFiles(array $_data)
