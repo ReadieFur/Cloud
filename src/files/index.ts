@@ -102,7 +102,7 @@ class Files
         });
         fileRow.classList.add("uploading");
         fileRow.style.background = `linear-gradient(90deg, rgba(var(--accentColour), 1) 0%, transparent 0%)`;
-        fileRow.addEventListener("click", () => { this.uploadsBody.removeChild(fileRow); });
+        //fileRow.addEventListener("click", () => { this.uploadsBody.removeChild(fileRow); });
         this.uploadsBody.appendChild(fileRow);
 
         (jQuery(this.uploadForm) as any as IAJAXSubmit).ajaxSubmit(
@@ -254,7 +254,7 @@ class Files
             file.dateAltered *= 1000;
             var fileRow = this.CreateFileRow(file);
             fileRow.id = file.id;
-            fileRow.addEventListener("click", () => { window.open(`${Main.WEB_ROOT}/files/view/${file.id}/`); });
+            //fileRow.addEventListener("click", () => { window.open(`${Main.WEB_ROOT}/files/view/${file.id}/`); });
             this.filesBody.appendChild(fileRow);
         });
 

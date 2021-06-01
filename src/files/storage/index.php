@@ -1,11 +1,7 @@
 <?php
 require_once __DIR__ . '/../../../../api/account/accountFunctions.php';
-require_once __DIR__ . '/../../../../api/database/databaseHelper.php';
-require_once __DIR__ . '/../../../../api/database/readie/users.php';
-require_once __DIR__ . '/../../../../api/database/readie/cloud/cloud_permissions.php';
 require_once __DIR__ . '/../../../../api/database/readie/cloud/cloud_files.php';
 require_once __DIR__ . '/../../../../api/returnData.php';
-//require_once __DIR__ . '/../../assets/php/mimeTypes.php';
 
 class File
 {
