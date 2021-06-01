@@ -17,13 +17,13 @@ class View
         {
             Main.Alert(Main.GetPHPErrorMessage(parsedPHPData.data));
             await Main.Sleep(2500);
-            //window.location.href = `${Main.WEB_ROOT}/`;
+            window.location.href = `${Main.WEB_ROOT}/`;
         }
         else if (parsedPHPData.data === false)
         {
             Main.Alert("Unknown error.");
             await Main.Sleep(2500);
-            //window.location.href = `${Main.WEB_ROOT}/`;
+            window.location.href = `${Main.WEB_ROOT}/`;
         }
         return this;
     }
