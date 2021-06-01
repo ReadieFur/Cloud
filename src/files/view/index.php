@@ -118,33 +118,45 @@
 </head>
 <header id="header"><?php echo execAndRead("{$SITE_ROOT}/assets/php/header.php"); ?></header>
 <body>
-    <span id="contentContainer">
-        <?php
-            if (!$phpData->error)
-            {
-                switch ($mimeParent)
-                {
-                    case 'video':
-                        ?>
-                            <video controls src="<?php echo $phpData->data->filePath; ?>"></video>
-                        <?php
-                        break;
-                    case 'image':
-                        ?>
-                            <img src="<?php echo $phpData->data->filePath; ?>">
-                        <?php
-                        break;
-                    case 'audio':
-                        ?>
-                            <audio controls src="<?php echo $phpData->data->filePath; ?>"></audio>
-                        <?php
-                        break;
-                    default:
-                        break;
-                }
-            }
-        ?>
-    </span>
+    <?php
+        if (!$phpData->error)
+        {
+            ?>
+                <section id="pageTitleContainer">
+                    <div class="leftRight">
+                        <h4><?php echo $files->data[0]->name . '.' . $files->data[0]->type; ?></h4>
+                        <a class="asButton" href="<?php echo $phpData->data->filePath; ?>" target="_blank">Download</a>
+                    </div>
+                    <hr>
+                    <br>
+                </section>
+                <span id="contentContainer">
+                    <?php
+                        switch ($mimeParent)
+                        {
+                            case 'video':
+                                ?>
+                                    <video controls src="<?php echo $phpData->data->filePath; ?>"></video>
+                                <?php
+                                break;
+                            case 'image':
+                                ?>
+                                    <img src="<?php echo $phpData->data->filePath; ?>">
+                                <?php
+                                break;
+                            case 'audio':
+                                ?>
+                                    <audio controls src="<?php echo $phpData->data->filePath; ?>"></audio>
+                                <?php
+                                break;
+                            default:
+                                break;
+                        }
+                    ?>
+                </span>
+            <?php
+        }
+    ?>
 </body>
 <footer id="footer"><?php echo execAndRead("{$SITE_ROOT}/assets/php/footer.php"); ?></footer>
 </html>

@@ -2,8 +2,13 @@
 {
     position: relative;
     display: inline-block;
-    //Header: 100px, Footer: 60px, Extra space: 10px
-    height: calc(100vh - 100px - 60px - 10px);
+    /*
+    * Header: 100px
+    * #pageTitleContainer: 100px~;
+    * Footer: 60px
+    * Extra space: 10px
+    */
+    height: calc(100vh - 100px - 100px - 60px - 10px);
 
     > *
     {
