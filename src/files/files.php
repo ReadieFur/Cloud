@@ -59,8 +59,8 @@ class Files
             while (count($existingIDs->data) > 0);
 
             $typeSeperatorIndex = strrpos($_files['inputFile']['name'], '.');
-            $fileName = $typeSeperatorIndex !== false ? substr($_files['inputFile']['name'], 0, $typeSeperatorIndex) : $_files['inputFile']['name'];
-            $fileType = $typeSeperatorIndex !== false ? substr($_files['inputFile']['name'], $typeSeperatorIndex + 1) : "";
+            $fileName = $this->GetValidFileName($typeSeperatorIndex !== false ? substr($_files['inputFile']['name'], 0, $typeSeperatorIndex) : $_files['inputFile']['name']);
+            $fileType = $this->GetValidFileType($typeSeperatorIndex !== false ? substr($_files['inputFile']['name'], $typeSeperatorIndex + 1) : "");
 
             //$tableData = new cloud_files();
             $tableData = array(
@@ -101,12 +101,30 @@ class Files
                     Handled in the previous if clause.*/
                 case 'updateFile':
                     return $this->UpdateFile($query['data']);
-                /*case 'viewFile':
-                    //Handled before the user login.*/
+                case 'deleteFile':
+                    return $this->DeleteFile($query['data']);
                 default:
                     return new ReturnData('INVALID_METHOD', true);
             }
         }
+    }
+
+    private function DeleteFile(array $_data)
+    {
+        if (!isset($_data['id'])) { return new ReturnData('INVALID_DATA', true); }
+
+        $files = $this->filesTable->Select(array('id'=>$_data['id']));
+        if ($files->error) { return $files; }
+        else if (!isset($files->data[0])) { return new ReturnData('NO_RESULTS', true); }
+        else if ($_COOKIE['READIE_UID'] !== $files->data[0]->uid) { return new ReturnData('INVALID_PERMISSIONS', true); }
+
+        $localFileDeleted = unlink(__DIR__ . '/storage/userfiles/' . $files->data[0]->id);
+        if (!$localFileDeleted) { return new ReturnData('SERVER_ERROR', true); }
+
+        $deleteResponse = $this->filesTable->Delete(array('id'=>$files->data[0]->id));
+        if ($deleteResponse->error) { return $deleteResponse; }
+        else if ($deleteResponse->data !== true) { return new ReturnData($deleteResponse->data, true); }
+        return new ReturnData(true);
     }
 
     private function UpdateFile(array $_data)
@@ -129,9 +147,9 @@ class Files
 
         $updatedFileResponse = $this->filesTable->Update(
             array(
-                'name'=>$_data['name'],
-                'type'=>$_data['type'],
-                'isPrivate'=>$_data['isPrivate'],
+                'name'=>$this->GetValidFileName($_data['name']),
+                'type'=>$this->GetValidFileType($_data['type']),
+                'isPrivate'=>$_data['isPrivate'] == '1' ? '1' : '0',
                 'dateAltered'=>Time()
             ),
             array(
@@ -200,29 +218,39 @@ class Files
 
         $pdo = new PDO("mysql:host=$dbServername:3306;dbname=$dbName", $dbUsername, $dbPassword);
         $dbi = new DatabaseInterface($pdo);
-        $files = $dbi
+        $filesFound = $dbi
             ->Table1('cloud_files')
             ->Select(array("*"))
             ->Where($where)
             ->Order($order, $orderDescending)
             ->Limit($resultsPerPage, $startIndex)
             ->Execute();
-        if ($files->error) { return $files; }
+        if ($filesFound->error) { return $filesFound; }
 
-        $dbi = new DatabaseInterface($pdo);
-        $count = $dbi
+        $dbi2 = new DatabaseInterface($pdo);
+        $filesCount = $dbi2
             ->Table1('cloud_files')
             ->SelectCount()
             ->Where($where)
             ->Execute();
-        if ($count->error) { return $count; }
+        if ($filesCount->error) { return $filesCount; }
 
         $data = new stdClass();
-        $data->files = $files->data;
-        $data->filesFound = intval($count->data[0]->count);
+        $data->files = $filesFound->data;
+        $data->filesFound = intval($filesCount->data[0]->count);
         $data->startIndex = $startIndex;
         $data->resultsPerPage = $resultsPerPage;
         return new ReturnData($data);
+    }
+
+    private static function GetValidFileName(string $name)
+    {
+        return preg_replace('/[\\\\\/:*?\"<>|]/', '', substr($name, 0, 255));
+    }
+
+    private static function GetValidFileType(string $type)
+    {
+        return substr($type, 0, 24);
     }
 }
 //new Files($_GET, $_FILES);

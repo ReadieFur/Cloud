@@ -68,6 +68,7 @@
                         <div class="joinButtons">
                             <button>Download</button>
                             <button>Public</button>
+                            <button class="red">Delete</button>
                         </div>
                     </td>
                 </tr>-->
@@ -82,6 +83,7 @@
                         <div class="joinButtons">
                             <button>Download</button>
                             <button>Public</button>
+                            <button class="red">Delete</button>
                         </div>
                     </td>
                 </tr>-->

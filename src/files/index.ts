@@ -2,8 +2,6 @@ import { Main, ReturnData } from "../assets/js/main.js";
 
 class Files
 {
-    private readonly resultsPerPage = 20;
-
     private unfocus: HTMLInputElement;
     private search: HTMLFormElement;
     private searchText: HTMLInputElement;
@@ -17,7 +15,6 @@ class Files
     private inputFile: HTMLInputElement;
 
     private filesFilter: IFilesFilter;
-    private files?: IFile[];
 
     constructor()
     {
@@ -71,6 +68,25 @@ class Files
         .observe(this.inputFile, { attributes: true, childList: false });
         this.inputFile.addEventListener("change", (ev) => { this.UploadFile(ev); })
         //this.fileDrop.addEventListener("drop", (ev) => { this.FileDrop(ev); });
+
+        if (Main.urlParams.has("q"))
+        {
+            var query: IFilesFilter | null = JSON.parse(Main.urlParams.get("q")!);
+            if (query !== null)
+            {
+                if (
+                    (query.data !== null || query.data !== undefined) &&
+                    (query.filter !== null || query.filter !== undefined) &&
+                    (query.page !== null || query.page !== undefined)
+                )
+                {
+                    this.filesFilter.data = query.data;
+                    this.filesFilter.filter = query.filter;
+                    this.filesFilter.page = query.page;
+                    this.searchText.value = query.data
+                }
+            }
+        }
 
         this.FilesPHP(
         {
@@ -214,7 +230,8 @@ class Files
         }
         else
         {
-            this.filesFilter.page = 0;
+            //this.filesFilter.page = 0;
+            this.filesFilter.page = 1;
         }
 
         this.pageButtonsContainer.innerHTML = "";
@@ -254,7 +271,7 @@ class Files
             file.dateAltered *= 1000;
             var fileRow = this.CreateFileRow(file);
             fileRow.id = file.id;
-            //fileRow.addEventListener("click", () => { window.open(`${Main.WEB_ROOT}/files/view/${file.id}/`); });
+            fileRow.addEventListener("click", (ev) => { if ((<HTMLElement>ev.target).tagName == "TD") { window.open(`${Main.WEB_ROOT}/files/view/${file.id}/`); } });
             this.filesBody.appendChild(fileRow);
         });
 
@@ -317,12 +334,12 @@ class Files
         nameInput.maxLength = 255;
         nameInput.value = file.name;
         nameInput.addEventListener("keypress", (ev) => { if (ev.key === "Enter") { this.unfocus.focus(); } });
-        nameInput.addEventListener("input", () => { nameInput.value = Files.GetValidFileName(nameInput.value.substr(0, 24)); });
+        nameInput.addEventListener("input", () => { nameInput.value = Files.GetValidFileName(nameInput.value); });
         nameInput.addEventListener("focusout", () =>
         {
             if (file.name !== nameInput.value)
             {
-                nameInput.value = file.name = Files.GetValidFileName(nameInput.value.substr(0, 24));
+                nameInput.value = file.name = Files.GetValidFileName(nameInput.value);
 
                 this.FilesPHP(
                 {
@@ -342,12 +359,12 @@ class Files
         typeInput.maxLength = 24;
         typeInput.value = file.type;
         /*typeInput.addEventListener("keypress", (ev) => { if (ev.key === "Enter") { this.unfocus.focus(); } });
-        typeInput.addEventListener("input", () => { typeInput.value = Files.GetValidFileName(typeInput.value.substr(0, 24)); });
+        typeInput.addEventListener("input", () => { typeInput.value = Files.GetValidFileName(typeInput.value); });
         typeInput.addEventListener("focusout", () =>
         {
             if (file.name !== typeInput.value)
             {
-                typeInput.value = file.name = Files.GetValidFileName(typeInput.value.substr(0, 24));
+                typeInput.value = file.name = Files.GetValidFileName(typeInput.value);
 
                 this.FilesPHP(
                 {
@@ -401,6 +418,24 @@ class Files
         if (file.isPrivate === '1') { shareButton.classList.remove("active"); }
         else { shareButton.classList.add("active"); }
         optionsContainer.appendChild(shareButton);
+        var deleteButton = document.createElement("button");
+        deleteButton.innerText = "Delete";
+        deleteButton.classList.add("red");
+        deleteButton.addEventListener("dblclick", () =>
+        {
+            this.FilesPHP(
+            {
+                method: "deleteFile",
+                data: file,
+                success: (response) =>
+                {
+                    if (response.error) { Main.Alert(Main.GetPHPErrorMessage(response.data)); }
+                    else if (response.data !== true) { Main.Alert("Unknown error."); }
+                    else { tr.remove(); }
+                }
+            });
+        });
+        optionsContainer.appendChild(deleteButton);
         optionsColumn.appendChild(optionsContainer);
         tr.appendChild(optionsColumn);
         
@@ -409,13 +444,15 @@ class Files
 
     private FilesPHP(params:
     {
-        method: "getFiles" | "updateFile",
+        method: "getFiles" | "updateFile" | "deleteFile",
         data?: object
         success?: (response: ReturnData) => any
         error?: (ex: any) => any
         async?: boolean
     })
     {
+        console.log(this.filesFilter);
+
         return jQuery.ajax(
         {
             async: params.async??true,
@@ -437,7 +474,12 @@ class Files
 
     private static GetValidFileName(fileName: string): string
     {
-        return fileName.replace(/[\\\/:*?\"<>|]/, "");
+        return fileName.substr(0, 255).replace(/[\\\/:*?\"<>|]/, "");
+    }
+
+    private static GetValidFileType(fileName: string): string
+    {
+        return fileName.substr(0, 24);
     }
 
     private WindowMessageEvent(ev: MessageEvent<any>)

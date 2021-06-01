@@ -81,7 +81,7 @@
 {
     padding-top: 20px;
     width: 100%;
-    border-collapse: collapse;
+    border-spacing: 0;
 
     th, td
     {
@@ -129,6 +129,7 @@
         min-height: $listItemIntitialHeight;
         height: $listItemIntitialHeight;
         cursor: pointer;
+        border-bottom: 1px solid rgba(var(--foregroundColour), 1);
 
         &:hover
         {
@@ -201,6 +202,19 @@
     {
         //text-align: right;
         //width: ($segment*1.25)+0%;
+        button
+        {
+            font-weight: normal;
+        }
+        
+        .red
+        {
+            &:hover
+            {
+                background-color: red;
+                color: white;
+            }
+        }
     }
 }
 
