@@ -1,0 +1,17 @@
+#contentContainer
+{
+    position: relative;
+    display: inline-block;
+    //Header: 100px, Footer: 60px, Extra space: 10px
+    height: calc(100vh - 100px - 60px - 10px);
+
+    > *
+    {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        max-width: 100%;
+        max-height: 100%;
+    }
+}
