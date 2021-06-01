@@ -63,8 +63,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <?php echo execAndRead("{$SITE_ROOT}/assets/php/head.php"); ?>
-    <link rel="stylesheet" href="<?php echo $WEB_ROOT; ?>/files/view/view.css">
+<link rel="stylesheet" href="<?php echo $WEB_ROOT; ?>/files/view/view.css">
     <script src="<?php echo $WEB_ROOT; ?>/files/view/view.js" type="module"></script>
     <script>var phpData = `<?php echo json_encode($phpData); ?>`;</script>
     <?php
@@ -84,12 +83,12 @@
                         <meta property="og:video:url" content="<?php echo $_SERVER['REQUEST_SCHEME'] . '://' . $_SERVER['HTTP_HOST'] . $phpData->data->filePath; ?>">
                         <meta property="og:video:secure_url" content="<?php echo $_SERVER['REQUEST_SCHEME'] . '://' . $_SERVER['HTTP_HOST'] . $phpData->data->filePath; ?>">
                         <meta property="og:video:type" content="<?php echo $phpData->data->mimeType; ?>">
-                        <!--<meta property="og:video:width" content="1920">--> <!-- Make dynamic, do I need this? -->
-                        <!--<meta property="og:video:height" content="1080">--> <!-- Make dynamic, do I need this? -->
+                        <meta property="og:video:width" content="1920"> <!-- Make dynamic, do I need this? -->
+                        <meta property="og:video:height" content="1080"> <!-- Make dynamic, do I need this? -->
                         <meta name="twitter:card" content="player">
                         <meta name="twitter:image" content="https://cdn.global-gaming.co/images/banner.png">
-                        <!--<meta property="og:video:width" content="1920">--> <!-- Make dynamic, do I need this? -->
-                        <!--<meta property="og:video:height" content="1080">--> <!-- Make dynamic, do I need this? -->
+                        <meta property="og:video:width" content="1920"> <!-- Make dynamic, do I need this? -->
+                        <meta property="og:video:height" content="1080"> <!-- Make dynamic, do I need this? -->
                         <meta name="twitter:player" content="<?php echo $_SERVER['REQUEST_SCHEME'] . '://' . $_SERVER['HTTP_HOST'] . $phpData->data->filePath; ?>">
                     <?php
                     break;
@@ -99,8 +98,8 @@
                         <meta property="og:image" content="<?php echo $_SERVER['REQUEST_SCHEME'] . '://' . $_SERVER['HTTP_HOST'] . $phpData->data->filePath; ?>">  <!-- TMP while I try get ffmpeg thumbnails working -->
                         <meta property="og:image:secure_url" content="<?php echo $_SERVER['REQUEST_SCHEME'] . '://' . $_SERVER['HTTP_HOST'] . $phpData->data->filePath; ?>">
                         <meta property="og:image:type" content="<?php echo $phpData->data->mimeType; ?>"> <!-- Make dynamic, do I need this? -->
-                        <!--<meta property="og:image:width" content="1080">--> <!-- Make dynamic -->
-                        <!--<meta property="og:image:height" content="1920">--> <!-- Make dynamic -->
+                        <meta property="og:image:width" content="1080"> <!-- Make dynamic -->
+                        <meta property="og:image:height" content="1920"> <!-- Make dynamic -->
                         <meta name="twitter:card" content="image">
                         <meta name="twitter:image" content="<?php echo $_SERVER['REQUEST_SCHEME'] . '://' . $_SERVER['HTTP_HOST'] . $phpData->data->filePath; ?>">
                     <?php
@@ -115,6 +114,7 @@
             }
         }
     ?>
+    <?php echo execAndRead("{$SITE_ROOT}/assets/php/head.php"); ?>
 </head>
 <header id="header"><?php echo execAndRead("{$SITE_ROOT}/assets/php/header.php"); ?></header>
 <body>

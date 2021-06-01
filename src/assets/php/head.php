@@ -11,7 +11,7 @@
 <meta property="og:type" content="website">
 <meta property="og:title" content="<?php echo $title != null ? $title : "$DirName | Cloud"; ?>"/>
 <meta property="og:description" content="<?php echo $description != null ? $description : $DirName; ?>"/>
-<meta property="og:url" content="https://readie.global-gaming.co/bsdp-overlay<?php echo $REQUEST_URI; ?>"/>
+<meta property="og:url" content="https://readie.global-gaming.co<?php echo $REQUEST_URI; ?>"/>
 <meta property="og:image" content="https://cdn.global-gaming.co/images/team/members/readiecircle.png"/>
 <title><?php echo $title != null ? $title : "$DirName | Cloud"; ?></title>
 <link rel="icon" href="https://cdn.global-gaming.co/images/team/members/readiecircle.png" type="image/png">
