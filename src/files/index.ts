@@ -230,7 +230,6 @@ class Files
             {
                 button.onclick = () =>
                 {
-                    
                     this.FilesPHP(
                     {
                         method: "getFiles",
@@ -255,6 +254,7 @@ class Files
             file.dateAltered *= 1000;
             var fileRow = this.CreateFileRow(file);
             fileRow.id = file.id;
+            fileRow.addEventListener("click", () => { window.open(`${Main.WEB_ROOT}/files/view/${file.id}/`); });
             this.filesBody.appendChild(fileRow);
         });
 
@@ -382,7 +382,7 @@ class Files
         optionsContainer.classList.add("joinButtons");
         var downloadButton = document.createElement("button");
         downloadButton.innerText = "Download";
-        downloadButton.addEventListener("click", () => { window.open(`${Main.WEB_ROOT}/files/storage/${file.id}`); });
+        downloadButton.addEventListener("click", () => { window.open(`${Main.WEB_ROOT}/files/storage/${file.id}/`); });
         optionsContainer.appendChild(downloadButton);
         var shareButton = document.createElement("button");
         shareButton.innerText = "Public";

@@ -1,5 +1,7 @@
 Todo:
-    ☐ File type text check.
     ☐ Limit chars for names and types on the server side.
+    ☐ Fix file search.
+    ☐ Fix file listing UI seperator.
 
 Completed:
+    ✔ File type text check. @done(21-06-01 13:49)

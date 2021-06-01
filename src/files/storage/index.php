@@ -5,6 +5,7 @@ require_once __DIR__ . '/../../../../api/database/readie/users.php';
 require_once __DIR__ . '/../../../../api/database/readie/cloud/cloud_permissions.php';
 require_once __DIR__ . '/../../../../api/database/readie/cloud/cloud_files.php';
 require_once __DIR__ . '/../../../../api/returnData.php';
+//require_once __DIR__ . '/../../assets/php/mimeTypes.php';
 
 class File
 {
@@ -36,7 +37,7 @@ class File
         //https://stackoverflow.com/questions/1628260/downloading-a-file-with-a-different-name-to-the-stored-name
         header('Content-Disposition: attachment; filename="' . $files->data[0]->name. '.' . $files->data[0]->type . '"');
         header("Content-Length: " . filesize(__DIR__ . '/userfiles/' . $files->data[0]->id));
-        //TODO Add the content type header.
+        header("Content-Type: " . mime_content_type(__DIR__ . '/userfiles/' . $files->data[0]->id));
         $fileContents = readfile(__DIR__ . '/userfiles/' . $files->data[0]->id);
         if ($fileContents === false) { http_response_code(500); exit(); }
         exit();

@@ -24,6 +24,9 @@
             <h3>Drop files anywhere to upload.</h3>
         </div>
     </div>-->
+    <!--<div id="viewer">
+        For now I will just redirect to the view page when the user clicks on the file.
+    </div>-->
     <section id="filesList">
         <div class="leftRight">
             <table>
