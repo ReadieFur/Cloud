@@ -152,6 +152,15 @@
             {
                 pointer-events: none;
             }
+
+            .optionsColumn
+            {
+                > .joinButtons
+                {
+                    pointer-events: none;
+                    opacity: 0;
+                }
+            }
         }
     }
 

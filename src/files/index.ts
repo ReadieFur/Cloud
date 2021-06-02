@@ -406,13 +406,23 @@ class Files
         shareButton.addEventListener("click", () =>
         {
             file.isPrivate = file.isPrivate === '1' ? '0' : '1';
-            if (file.isPrivate === '1') { shareButton.classList.remove("active"); }
-            else { shareButton.classList.add("active"); }
             this.FilesPHP(
             {
                 method: "updateFile",
                 data: file,
-                success: (response) => { if (response.error) { Main.Alert(Main.GetPHPErrorMessage(response.data)); } }
+                success: (response) =>
+                {
+                    if (response.error)
+                    {
+                        file.isPrivate = file.isPrivate === '1' ? '0' : '1';
+                        Main.Alert(Main.GetPHPErrorMessage(response.data));
+                    }
+                    else
+                    {
+                        if (file.isPrivate === '1') { shareButton.classList.remove("active"); }
+                        else { shareButton.classList.add("active"); }
+                    }
+                }
             });
         });
         if (file.isPrivate === '1') { shareButton.classList.remove("active"); }
