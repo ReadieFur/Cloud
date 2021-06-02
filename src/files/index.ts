@@ -461,8 +461,6 @@ class Files
         async?: boolean
     })
     {
-        console.log(this.filesFilter);
-
         return jQuery.ajax(
         {
             async: params.async??true,
