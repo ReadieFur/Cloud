@@ -186,15 +186,17 @@ class Files
         
         $order = 'dateAltered';
         $orderDescending = true;
-        $where = array();
+        $where = array('uid'=>$_COOKIE['READIE_UID']);
         
         switch($_data['filter'])
         {
             case 'name':
-                $where = array(array('name', 'LIKE', $_data['data']));
+                $where[] = 'AND';
+                $where[] = array('name', 'LIKE', $_data['data']);
                 break;
             case 'type':
-                $where = array(array('name', 'LIKE', $_data['data']));
+                $where[] = 'AND';
+                $where[] = array('type', 'LIKE', $_data['data']);
                 break;
             case 'size':
                 $order = 'size';
