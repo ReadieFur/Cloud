@@ -1,6 +1,7 @@
 <?php
     global $WEB_ROOT;
     global $REQUEST_URI;
+    global $ogType;
     global $title;
     global $description;
     $DirName = ltrim(ucwords(str_replace("_", " ", basename($REQUEST_URI))));
@@ -8,7 +9,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="color-scheme" content="dark light">
-<meta property="og:type" content="website">
+<meta property="og:type" content="<?php echo $ogType !== null ? $ogType : 'website'; ?>">
 <meta property="og:title" content="<?php echo $title != null ? $title : "$DirName | Cloud"; ?>"/>
 <meta property="og:description" content="<?php echo $description != null ? $description : $DirName; ?>"/>
 <meta property="og:url" content="https://readie.global-gaming.co<?php echo $REQUEST_URI; ?>"/>

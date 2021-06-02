@@ -56,7 +56,7 @@ class File
         header('Content-Type: ' . mime_content_type(__DIR__ . '/userfiles/' . $files->data[0]->id));
         header('Accept-Ranges: bytes');
         header('Content-Length:' . ($endBytes - $beginBytes));
-        header("Content-Disposition: inline;");
+        header('Content-Disposition: inline;');
         header("Content-Range: bytes $beginBytes-$endBytes/$fileSize");
         header("Content-Transfer-Encoding: binary\n");
         header('Connection: close');

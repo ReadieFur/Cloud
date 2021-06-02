@@ -12,7 +12,6 @@ class View
     public async Init()
     {
         var parsedPHPData: ReturnData = JSON.parse(phpData);
-        console.log(parsedPHPData);
         if (parsedPHPData.error)
         {
             Main.Alert(Main.GetPHPErrorMessage(parsedPHPData.data));

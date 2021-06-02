@@ -69,11 +69,14 @@
     <?php
         if (!$phpData->error)
         {
+            //Set in head.php.
+            $ogType = $phpData->data->mimeType;
+
             switch ($mimeParent)
             {
                 case 'video':
                     ?>
-                        <meta property="og:type" content="<?php echo $phpData->data->mimeType; ?>">
+                        <!--<meta property="og:type" content="<?php echo $phpData->data->mimeType; ?>">-->
                         <meta property="og:image" content="https://cdn.global-gaming.co/images/banner.png">  <!-- TMP while I try get ffmpeg thumbnails working -->
                         <meta property="og:image:secure_url" content="https://cdn.global-gaming.co/images/banner.png">
                         <meta property="og:image:type" content="image/jpeg">
@@ -94,7 +97,7 @@
                     break;
                 case 'image':
                     ?>
-                        <meta property="og:type" content="<?php echo $phpData->data->mimeType; ?>">
+                        <!--<meta property="og:type" content="<?php echo $phpData->data->mimeType; ?>">-->
                         <meta property="og:image" content="<?php echo $_SERVER['REQUEST_SCHEME'] . '://' . $_SERVER['HTTP_HOST'] . $phpData->data->filePath; ?>">  <!-- TMP while I try get ffmpeg thumbnails working -->
                         <meta property="og:image:secure_url" content="<?php echo $_SERVER['REQUEST_SCHEME'] . '://' . $_SERVER['HTTP_HOST'] . $phpData->data->filePath; ?>">
                         <meta property="og:image:type" content="<?php echo $phpData->data->mimeType; ?>"> <!-- Make dynamic, do I need this? -->
@@ -104,11 +107,11 @@
                         <meta name="twitter:image" content="<?php echo $_SERVER['REQUEST_SCHEME'] . '://' . $_SERVER['HTTP_HOST'] . $phpData->data->filePath; ?>">
                     <?php
                     break;
-                case 'audio':
+                /*case 'audio':
                     ?>
                     
                     <?php
-                    break;
+                    break;*/
                 default:
                     break;
             }
