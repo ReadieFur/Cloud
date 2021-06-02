@@ -33,6 +33,14 @@ class File
         //https://stackoverflow.com/questions/1628260/downloading-a-file-with-a-different-name-to-the-stored-name
         //https://stackoverflow.com/questions/5924061/using-php-to-output-an-mp4-video
 
+        /*
+        * While this allows the brower to request parts of the file, it is probably slow
+        * because if I undertand this correctly it will have to log in above and check the file permissions for every small bit of data it needs.
+        * this therefore makes the process low and increaes the load on the server.
+        * I think the sleep of 1s below helps prevent the file being requested by the browser as frequently
+        * and while that will reduce some load on the server I will still be checking their permissions and it will limit the speed at which the client can load the file.
+        * I think what I need to do is log the user in and then have a short period where they can request the file with no login checks.
+        */
 
         $fileSize = filesize(__DIR__ . '/userfiles/' . $files->data[0]->id);
         //This shouldn't fail to open because I checked if the file existed earlier.
