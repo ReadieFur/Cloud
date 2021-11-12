@@ -7,6 +7,7 @@ Todo:
     ☐ Add regex to the file type check.
     ☐ Hide options on upload.
     ☐ Update file listing details when a file is uploaded or deleted.
+    ☐ Remove the text transform on the file name for the view file page.
 
 Completed:
     ✔ File type text check. @done(21-06-01 13:49)
