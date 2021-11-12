@@ -3,82 +3,197 @@ require_once __DIR__ . '/../../../../api/account/accountFunctions.php';
 require_once __DIR__ . '/../../../../api/database/readie/cloud/cloud_files.php';
 require_once __DIR__ . '/../../../../api/returnData.php';
 
+class FileData
+{
+    public string $id;
+    public string $name;
+    public string $type;
+    public int $size;
+}
+
 class File
 {
     function __construct()
     {
-        $uri = array_filter(explode('/', $_SERVER['REQUEST_URI']), fn($part) => !is_null($part) && $part !== '');
+        $fileData = new FileData();
 
-        if ($uri[count($uri) - 1] !== 'storage' || (is_null($uri[count($uri)]) || $uri[count($uri)] === '')) { http_response_code(403); exit(); }
-
-        $filesTable = new cloud_files(true);
-
-        $files = $filesTable->Select(array('id'=>$uri[count($uri)]));
-        if ($files->error) { http_response_code(500); exit(); }
-        else if (empty($files->data) || $files->data[0] === null) { http_response_code(404); exit(); }
-        else if (!file_exists(__DIR__ . '/userfiles/' . $files->data[0]->id))
+        if (session_status() == PHP_SESSION_ACTIVE && $_SESSION["REQUEST_URI"] == $_SERVER['REQUEST_URI'])
         {
-            $deleteResponse = $filesTable->Delete(array('id'=>$uri[count($uri)]));
-            if ($deleteResponse->error || $deleteResponse !== true) { http_response_code(500); exit(); }
-            http_response_code(404);
-            exit();
+            //Check if a session for this user already exists (if it does then they can skip the verification).
+            $fileData->id = $_SESSION['id'];
+            $fileData->name = $_SESSION['name'];
+            $fileData->type = $_SESSION['type'];
+            $fileData->size = $_SESSION['size'];
         }
-        else if ($files->data[0]->isPrivate === '1')
+        else
         {
-            $sessionValid = AccountFunctions::VerifySession();
-            if ($sessionValid->error) { http_response_code(500); exit(); }
-            else if (!$sessionValid->data || $_COOKIE['READIE_UID'] !== $files->data[0]->uid) { http_response_code(403); exit(); }
-        }
+            //Check if the user is allowed to access the file.
+            $uri = array_filter(explode('/', $_SERVER['REQUEST_URI']), fn($part) => !is_null($part) && $part !== '');
 
-        //https://stackoverflow.com/questions/1628260/downloading-a-file-with-a-different-name-to-the-stored-name
-        //https://stackoverflow.com/questions/5924061/using-php-to-output-an-mp4-video
-
-        /*
-        * While this allows the brower to request parts of the file, it is probably slow
-        * because if I undertand this correctly it will have to log in above and check the file permissions for every small bit of data it needs.
-        * this therefore makes the process low and increaes the load on the server.
-        * I think the sleep of 1s below helps prevent the file being requested by the browser as frequently
-        * and while that will reduce some load on the server I will still be checking their permissions and it will limit the speed at which the client can load the file.
-        * I think what I need to do is log the user in and then have a short period where they can request the file with no login checks.
-        */
-
-        $fileSize = filesize(__DIR__ . '/userfiles/' . $files->data[0]->id);
-        //This shouldn't fail to open because I checked if the file existed earlier.
-        $fileStream = fopen(__DIR__ . '/userfiles/' . $files->data[0]->id, 'rb');
-
-        $beginBytes = 0;
-        $endBytes = $fileSize;
-
-        if (isset($_SERVER['HTTP_RANGE']) && preg_match('/bytes=\h*(\d+)-(\d*)[\D.*]?/i', $_SERVER['HTTP_RANGE'], $matches))
-        {
-            $beginBytes=intval($matches[0]);
-            if(!empty($matches[1]))
+            if ($uri[count($uri) - 1] !== 'storage' || (is_null($uri[count($uri)]) || $uri[count($uri)] === '')) { http_response_code(403); exit(); }
+    
+            $filesTable = new cloud_files(true);
+    
+            $files = $filesTable->Select(array('id'=>$uri[count($uri)]));
+            if ($files->error) { http_response_code(500); exit(); }
+            else if (empty($files->data) || $files->data[0] === null) { http_response_code(404); exit(); }
+            else if (!file_exists(__DIR__ . '/userfiles/' . $files->data[0]->id))
             {
-                $endBytes=intval($matches[1]);
+                $deleteResponse = $filesTable->Delete(array('id'=>$uri[count($uri)]));
+                if ($deleteResponse->error || $deleteResponse !== true) { http_response_code(500); exit(); }
+                http_response_code(404);
+                exit();
+            }
+            else if ($files->data[0]->isPrivate === '1')
+            {
+                $sessionValid = AccountFunctions::VerifySession();
+                if ($sessionValid->error) { http_response_code(500); exit(); }
+                else if (!$sessionValid->data || $_COOKIE['READIE_UID'] !== $files->data[0]->uid) { http_response_code(403); exit(); }
+            }
+
+            if (session_status() == PHP_SESSION_NONE)
+            {
+                session_start();
+                $_SESSION['URL'] = $_SERVER['REQUEST_URI'];
+                $fileData->id = $_SESSION['id'] = strval($files->data[0]->id);
+                $fileData->name = $_SESSION['name'] = $files->data[0]->name;
+                $fileData->type = $_SESSION['type'] = $files->data[0]->type;
+                $fileData->size = $_SESSION['size'] = $files->data[0]->size;
             }
         }
 
-        if($beginBytes > 0|| $endBytes < $fileSize) { http_response_code(206); }
-        else { http_response_code(200); }
-
-        header('Content-Type: ' . mime_content_type(__DIR__ . '/userfiles/' . $files->data[0]->id));
-        header('Accept-Ranges: bytes');
-        header('Content-Length:' . ($endBytes - $beginBytes));
-        header('Content-Disposition: inline;');
-        header("Content-Range: bytes $beginBytes-$endBytes/$fileSize");
-        header("Content-Transfer-Encoding: binary\n");
-        header('Connection: close');
-
-        $cursor = $beginBytes;
-        fseek($fileStream, $beginBytes, 0);
-
-        while(!feof($fileStream) && $cursor < $endBytes && (connection_status()==0))
-        {
-            echo fread($fileStream, min(1024 * 16, $endBytes - $cursor));
-            $cursor += 1024 * 16;
-            usleep(1000);
-        }
-        exit();
+        //Stream the file.
+        $fileStream = new FileStream(
+            __DIR__ . '/userfiles/' . $fileData->id, $fileData->type,
+            $fileData->name,
+            $fileData->type
+        );
+        $fileStream->Begin();
     }
 }
+
+//https://stackoverflow.com/questions/1628260/downloading-a-file-with-a-different-name-to-the-stored-name
+//Tweaked from: http://codesamplez.com/programming/php-html5-video-streaming-tutorial
+class FileStream
+{
+    private $path = "";
+    private $name = "";
+    private $type = "";
+    private $stream = "";
+    private $buffer = 102400;
+    private $start = -1;
+    private $end = -1;
+    private $size = 0;
+ 
+    function __construct($filePath, $name, $type)
+    {
+        $this->path = $filePath;
+        $this->name = $name;
+        $this->type = $type;
+    }
+     
+    private function Open()
+    {
+        if (!($this->stream = fopen($this->path, 'rb')))
+        {
+            http_response_code(500);
+            die('Could not open stream for reading');
+        }
+    }
+     
+    private function SetHeaders()
+    {
+        ob_get_clean();
+        header("Content-Type: " . mime_content_type($this->path));
+        header("Content-Disposition: filename=\"" . $this->name . "." . $this->type . "\"");
+        header("Cache-Control: max-age=2592000, public");
+        header("Expires: " . gmdate('D, d M Y H:i:s', time()+2592000) . ' GMT');
+        header("Last-Modified: " . gmdate('D, d M Y H:i:s', @filemtime($this->path)) . ' GMT' );
+        $this->start = 0;
+        ////Set in the constructor.
+        //I ended up not setting this in the constructor because the calling code seemed to have it set as an integer somewhere even though I intval'd it.
+        //As I couldnt be bothered to fix it I just set it here.
+        $this->size = filesize($this->path); 
+        $this->end = $this->size - 1;
+        header("Accept-Ranges: 0-" . $this->end);
+         
+        if (isset($_SERVER['HTTP_RANGE']))
+        {
+            $c_start = $this->start;
+            $c_end = $this->end;
+ 
+            list(, $range) = explode('=', $_SERVER['HTTP_RANGE'], 2);
+            if (strpos($range, ',') !== false)
+            {
+                header('HTTP/1.1 416 Requested Range Not Satisfiable');
+                header("Content-Range: bytes $this->start-$this->end/$this->size");
+                exit;
+            }
+            if ($range == '-')
+            {
+                $c_start = $this->size - substr($range, 1);
+            }
+            else
+            {
+                $range = explode('-', $range);
+                $c_start = $range[0];
+                $c_end = (isset($range[1]) && is_numeric($range[1])) ? $range[1] : $c_end;
+            }
+            $c_end = ($c_end > $this->end) ? $this->end : $c_end;
+            if ($c_start > $c_end || $c_start > $this->size - 1 || $c_end >= $this->size)
+            {
+                header('HTTP/1.1 416 Requested Range Not Satisfiable');
+                header("Content-Range: bytes $this->start-$this->end/$this->size");
+                exit;
+            }
+            $this->start = $c_start;
+            $this->end = $c_end;
+            $length = $this->end - $this->start + 1;
+            fseek($this->stream, $this->start);
+            header('HTTP/1.1 206 Partial Content');
+            header("Content-Length: " . $length);
+            header("Content-Range: bytes $this->start-$this->end/" . $this->size);
+        }
+        else
+        {
+            header("Content-Length: " . $this->size);
+        }  
+    }
+    
+    //End the file stream.
+    private function End()
+    {
+        fclose($this->stream);
+        exit;
+    }
+     
+    //Stream the data to the client.
+    private function Stream()
+    {
+        $i = $this->start;
+        set_time_limit(0);
+        while(!feof($this->stream) && $i <= $this->end)
+        {
+            $bytesToRead = $this->buffer;
+            if(($i+$bytesToRead) > $this->end)
+            {
+                $bytesToRead = $this->end - $i + 1;
+            }
+            $data = fread($this->stream, $bytesToRead);
+            echo $data;
+            flush();
+            $i += $bytesToRead;
+        }
+    }
+    
+    //Begin the file stream.
+    public function Begin()
+    {
+        $this->Open();
+        $this->SetHeaders();
+        $this->Stream();
+        $this->End();
+    }
+}
+
 new File();
