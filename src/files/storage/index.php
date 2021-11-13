@@ -64,7 +64,7 @@ class File
 
         //Stream the file.
         $fileStream = new FileStream(
-            __DIR__ . '/userfiles/' . $fileData->id, $fileData->type,
+            __DIR__ . '/userfiles/' . $fileData->id,
             $fileData->name,
             $fileData->type
         );
@@ -110,9 +110,6 @@ class FileStream
         header("Expires: " . gmdate('D, d M Y H:i:s', time()+2592000) . ' GMT');
         header("Last-Modified: " . gmdate('D, d M Y H:i:s', @filemtime($this->path)) . ' GMT' );
         $this->start = 0;
-        ////Set in the constructor.
-        //I ended up not setting this in the constructor because the calling code seemed to have it set as an integer somewhere even though I intval'd it.
-        //As I couldnt be bothered to fix it I just set it here.
         $this->size = filesize($this->path); 
         $this->end = $this->size - 1;
         header("Accept-Ranges: 0-" . $this->end);
