@@ -8,7 +8,10 @@ Todo:
     ☐ Hide options on upload.
     ☐ Update file listing details when a file is uploaded or deleted.
     ☐ Remove the text transform on the file name for the view file page.
-
+    ☐ Add a file size limit to the upload form (set by the php/nginx max upload variable).
+    ☐ Add folders and previews.
+    ☐ Add file sharing options instead of just private/public. Planned methods: private, access by user account, access by timeout link, public, (possibly access by domain name in the future).
+    
 Completed:
     ✔ File type text check. @done(21-06-01 13:49)
     ✔ Fix file listing UI separator. @done(21-06-01 15:49)
