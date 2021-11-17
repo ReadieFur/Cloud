@@ -20,6 +20,18 @@ export class Main
     {
         (<HTMLDivElement>Main.ThrowIfNullOrUndefined(document.querySelector("#javascriptAlert"))).style.display = "none";
 
+        console.log(`
+            !   /\\                   ,'|
+            o--'O \`.                /  /
+             \`--.   \`-----------._,' ,'
+                \\                ,--'
+                 ) )    _,--(    |
+                /,^.---'     )/ \\\\
+               ((   \\\\      ((   \\\\
+                \\)   \\)      \\)  (/
+            -What are you doing here?
+        `);
+
         Main.WEB_ROOT = WEB_ROOT;
         Main.urlParams = new URLSearchParams(location.search);
         Main.header = Main.ThrowIfNullOrUndefined(document.querySelector("#header"));
