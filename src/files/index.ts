@@ -115,13 +115,14 @@ class Files
             size: file.size,
             isPrivate: '1',
             dateAltered: file.lastModified
-        });
+        }, true);
         fileRow.classList.add("uploading");
         fileRow.style.background = `linear-gradient(90deg, rgba(var(--accentColour), 1) 0%, transparent 0%)`;
         //fileRow.addEventListener("click", () => { this.uploadsBody.removeChild(fileRow); });
         this.uploadsBody.appendChild(fileRow);
 
-        (jQuery(this.uploadForm) as any as IAJAXSubmit).ajaxSubmit(
+        var wasCancelled = false;
+        const upload = (jQuery(this.uploadForm) as any as IAJAXSubmit).ajaxSubmit(
         {
             uploadProgress: (event, position, total, percentComplete) =>
             {	
@@ -144,8 +145,17 @@ class Files
             error: (jqXHR) =>
             {
                 this.uploadsBody.removeChild(fileRow);
-                Main.Alert(Main.GetStatusCodeMessage(jqXHR.status));
+                if (!wasCancelled) { Main.Alert(Main.GetStatusCodeMessage(jqXHR.status)); }
             }
+        });
+        //https://stackoverflow.com/questions/10601841/how-do-i-cancel-a-file-upload-started-by-ajaxsubmit-in-jquery
+        const xhr = (upload as any).data('jqxhr');
+        (<HTMLButtonElement>fileRow.querySelector(".cancel")).addEventListener("click", () =>
+        {
+            wasCancelled = true;
+            xhr.abort();
+            //Done by the error handler.
+            // this.uploadsBody.removeChild(fileRow);
         });
     }
 
@@ -271,7 +281,6 @@ class Files
             file.dateAltered *= 1000;
             var fileRow = this.CreateFileRow(file);
             fileRow.id = file.id;
-            fileRow.addEventListener("click", (ev) => { if ((<HTMLElement>ev.target).tagName == "TD") { window.open(`${Main.WEB_ROOT}/files/view/${file.id}/`); } });
             this.filesBody.appendChild(fileRow);
         });
 
@@ -297,11 +306,7 @@ class Files
             this.filesFilter.filter = "date";
             this.filesFilter.data = "";
         }
-        else if (
-            (
-                searchText[0] === "date"
-            ) && (searchText[1] !== "" || searchText[1] !== undefined)
-        )
+        else if ((searchText[0] === "date") && (searchText[1] !== "" || searchText[1] !== undefined))
         {
             var page = parseInt(searchText[1]);
             this.filesFilter.filter = searchText[0].toLowerCase() as IFilesFilter["filter"];
@@ -321,7 +326,7 @@ class Files
         });
     }
 
-    private CreateFileRow(file: IFile): HTMLTableRowElement
+    private CreateFileRow(file: IFile, isUpload: boolean = false): HTMLTableRowElement
     {
         var tr = document.createElement("tr");
         tr.classList.add("listItem");
@@ -396,56 +401,69 @@ class Files
         var optionsColumn = document.createElement("td");
         optionsColumn.classList.add("optionsColumn");
         var optionsContainer = document.createElement("div");
-        optionsContainer.classList.add("joinButtons");
-        var downloadButton = document.createElement("button");
-        downloadButton.innerText = "Download";
-        downloadButton.addEventListener("click", () => { window.open(`${Main.WEB_ROOT}/files/storage/${file.id}/`); });
-        optionsContainer.appendChild(downloadButton);
-        var shareButton = document.createElement("button");
-        shareButton.innerText = "Public";
-        shareButton.addEventListener("click", () =>
+        if (!isUpload)
         {
-            file.isPrivate = file.isPrivate === '1' ? '0' : '1';
-            this.FilesPHP(
+            optionsContainer.classList.add("joinButtons");
+            var downloadButton = document.createElement("button");
+            downloadButton.innerText = "Download";
+            downloadButton.addEventListener("click", () => { window.open(`${Main.WEB_ROOT}/files/storage/${file.id}/`); });
+            optionsContainer.appendChild(downloadButton);
+            var shareButton = document.createElement("button");
+            shareButton.innerText = "Public";
+            shareButton.addEventListener("click", () =>
             {
-                method: "updateFile",
-                data: file,
-                success: (response) =>
+                file.isPrivate = file.isPrivate === '1' ? '0' : '1';
+                this.FilesPHP(
                 {
-                    if (response.error)
+                    method: "updateFile",
+                    data: file,
+                    success: (response) =>
                     {
-                        file.isPrivate = file.isPrivate === '1' ? '0' : '1';
-                        Main.Alert(Main.GetPHPErrorMessage(response.data));
+                        if (response.error)
+                        {
+                            file.isPrivate = file.isPrivate === '1' ? '0' : '1';
+                            Main.Alert(Main.GetPHPErrorMessage(response.data));
+                        }
+                        else
+                        {
+                            if (file.isPrivate === '1') { shareButton.classList.remove("active"); }
+                            else { shareButton.classList.add("active"); }
+                        }
                     }
-                    else
-                    {
-                        if (file.isPrivate === '1') { shareButton.classList.remove("active"); }
-                        else { shareButton.classList.add("active"); }
-                    }
-                }
+                });
             });
-        });
-        if (file.isPrivate === '1') { shareButton.classList.remove("active"); }
-        else { shareButton.classList.add("active"); }
-        optionsContainer.appendChild(shareButton);
-        var deleteButton = document.createElement("button");
-        deleteButton.innerText = "Delete";
-        deleteButton.classList.add("red");
-        deleteButton.addEventListener("dblclick", () =>
+            if (file.isPrivate === '1') { shareButton.classList.remove("active"); }
+            else { shareButton.classList.add("active"); }
+            optionsContainer.appendChild(shareButton);
+            var deleteButton = document.createElement("button");
+            deleteButton.innerText = "Delete";
+            deleteButton.classList.add("red");
+            deleteButton.addEventListener("dblclick", () =>
+            {
+                this.FilesPHP(
+                {
+                    method: "deleteFile",
+                    data: file,
+                    success: (response) =>
+                    {
+                        if (response.error) { Main.Alert(Main.GetPHPErrorMessage(response.data)); }
+                        else if (response.data !== true) { Main.Alert("Unknown error."); }
+                        else { tr.remove(); }
+                    }
+                });
+            });
+            optionsContainer.appendChild(deleteButton);
+
+            tr.addEventListener("click", (ev) => { if ((<HTMLElement>ev.target).tagName == "TD") { window.open(`${Main.WEB_ROOT}/files/view/${file.id}/`); } });
+        }
+        else
         {
-            this.FilesPHP(
-            {
-                method: "deleteFile",
-                data: file,
-                success: (response) =>
-                {
-                    if (response.error) { Main.Alert(Main.GetPHPErrorMessage(response.data)); }
-                    else if (response.data !== true) { Main.Alert("Unknown error."); }
-                    else { tr.remove(); }
-                }
-            });
-        });
-        optionsContainer.appendChild(deleteButton);
+            var cancelUploadButton = document.createElement("button");
+            cancelUploadButton.innerText = "Cancel";
+            cancelUploadButton.classList.add("red", "cancel");
+            // cancelUploadButton.addEventListener("click", () => { /*To be set by the uploading function*/ });
+            optionsContainer.appendChild(cancelUploadButton);
+        }
         optionsColumn.appendChild(optionsContainer);
         tr.appendChild(optionsColumn);
         
