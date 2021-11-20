@@ -18,6 +18,50 @@
 <header id="header"><?php echo execAndRead("{$SITE_ROOT}/assets/php/header.php"); ?></header>
 <body>
     <input id="unfocus">
+    <div id="filePreviewContainer">
+        <div class="background"></div>
+        <iframe id="filePreview"></iframe>
+    </div>
+    <div id="sharingMenu">
+        <div class="background"></div>
+        <div class="container">
+            <h3>Sharing options:</h3>
+            <form>
+                <select id="sharingTypes">
+                    <option value="0">Private</option>
+                    <option value="1">Invite</option>
+                    <option value="2">Public</option>
+                </select>
+                <table>
+                    <!--There are no options for private sharing-->
+                    <!-- <tbody id="privateSharing">
+                    </tbody> -->
+                    <tbody id="inviteSharing">
+                        <tr>
+                            <td>
+                                <p>Add User:</p>
+                                <input type="text" id="inviteUser" placeholder="Username" minlength="4" maxlength="20">
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <p>Shared with:</p>
+                                <ul id="inviteList"></ul>
+                            </td>
+                        </tr>
+                    </tbody>
+                    <!--There are no options for public sharing-->
+                    <!-- <tbody id="publicSharing">
+                    </tbody> -->
+                </table>
+            </form>
+            <p id="unsavedSharingChangesNotice" class="light">You have unsaved changes!</p>
+            <div class="joinButtons">
+                <button id="sharingLink">Copy Link</button>
+                <button id="saveSharing">Save</button>
+            </div>
+        </div>
+    </div>
     <!--This drop box is just cosmetic, the event is attatched to the window-->
     <!--<div id="fileDrop">
         <div class="center">

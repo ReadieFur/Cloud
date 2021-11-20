@@ -1,15 +1,12 @@
 Todo:
-    ☐ Fix meta tags.
-    ☐ Intergrate the viewer to the file list.
     ☐ Animate the upload progress bar with a smooth transition between progress values.
     ☐ Style the file upload button.
     ☐ Add regex to the file type check.
     ☐ Hide options on upload.
     ☐ Update file listing details when a file is uploaded or deleted.
-    ☐ Remove the text transform on the file name for the view file page.
-    ☐ Add a file size limit to the upload form (set by the php/nginx max upload variable).
-    ☐ Add folders and previews.
-    ☐ Add file sharing options instead of just private/public. Planned methods: private, access by user account, access by timeout link, public, (possibly access by domain name in the future).
+    ☐ Add a file size limit to the upload form (currently set by the php/nginx max upload variable).
+    ☐ Add folders and thumbnails.
+    ☐ Store the file row element in memory so that it does not need to be queried and can be accessed easier. This will be necessary for when I will want to add a function for when files are updated as it would make the code neater, less repetitive, and could help with if files are updated elsewhere.
     
 Completed:
     ✔ File type text check. @done(21-06-01 13:49)
@@ -22,6 +19,11 @@ Completed:
     ✔ Fix file listing (shows all files for all users). @done(21-06-02 07:31)
     ✔ Look for a better way to return the files, the current method is slow as it waits for all of the file data before being displayed. @done(21-06-02 08:11)
     ✔ Fix issue where newly uploaded files cannot be clicked. @done(21-11-17 00:28)
+    ✔ Fix meta tags. @done(21-11-19 16:12)
+    ✔ Add file sharing options instead of just private/public. Planned methods: private, access by user account, access by timeout link, public, (possibly access by domain name in the future). @done(21-11-20 21:42)
+    ✔ Middle click to open a file in a new tab @done(21-11-20 21:42)
+    ✔ Normal click on a file opens a preview window, if the file cannot be previewed then say it cannot be previewed in the previewer. Also add a link to view the file externally as well as download it. An easy solution is to use and IFrame with the view file page. @done(21-11-20 21:42)
+    ✔ Remove the text transform on the file name for the view file page. @done(21-11-20 21:44)
 
 Cancelled:
     ✘ Download files through JS. @cancelled(21-06-01 15:36)

@@ -3,6 +3,7 @@ declare var WEB_ROOT: string;
 export class Main
 {
     public static WEB_ROOT: string;
+    public static inIFrame: boolean;
     public static header: HTMLElement;
     public static footer: HTMLElement;
     public static urlParams: URLSearchParams;
@@ -33,6 +34,7 @@ export class Main
         `);
 
         Main.WEB_ROOT = WEB_ROOT;
+        Main.inIFrame = window.self !== window.top;
         Main.urlParams = new URLSearchParams(location.search);
         Main.header = Main.ThrowIfNullOrUndefined(document.querySelector("#header"));
         Main.footer = Main.ThrowIfNullOrUndefined(document.querySelector("#footer"));
@@ -311,6 +313,29 @@ export class Main
             Main.alertBoxTextBox.focus();
             Main.alertBoxText.innerHTML = message;
             Main.alertBoxContainer.style.display = "block";
+        }
+    }
+
+    public static async FadeElement(
+        displayType: "inline" | "block" | "contents" | "flex" | "grid" | "inline-block" | "inline-flex" | "inline-table" | "run-in" | "table" | "table-caption" | "table-column-group" | "table-cell" | "table-column" | "table-row" | "none" | "initial" | "inherit",
+        element: HTMLElement
+    ): Promise<void>
+    {
+        const fadeTime = 399;
+
+        if (displayType !== "none")
+        {
+            element.style.display = displayType;
+            element.classList.remove("fadeOut");
+            element.classList.add("fadeIn");
+            await Main.Sleep(fadeTime);
+        }
+        else
+        {
+            element.classList.remove("fadeIn");
+            element.classList.add("fadeOut");
+            await Main.Sleep(fadeTime);
+            element.style.display = "none";
         }
     }
 

@@ -11,19 +11,32 @@ class View
 
     public async Init()
     {
+        if (Main.inIFrame)
+        {
+            document.body.classList.add("inIFrame");
+        }
+
         var parsedPHPData: ReturnData = JSON.parse(phpData);
+        console.log(parsedPHPData);
         if (parsedPHPData.error)
         {
             Main.Alert(Main.GetPHPErrorMessage(parsedPHPData.data));
-            await Main.Sleep(2500);
-            window.location.href = `${Main.WEB_ROOT}/`;
+            if (!Main.inIFrame)
+            {
+                await Main.Sleep(2500);
+                window.location.href = `${Main.WEB_ROOT}/`;
+            }
         }
         else if (parsedPHPData.data === false)
         {
             Main.Alert("Unknown error.");
-            await Main.Sleep(2500);
-            window.location.href = `${Main.WEB_ROOT}/`;
+            if (!Main.inIFrame)
+            {
+                await Main.Sleep(2500);
+                window.location.href = `${Main.WEB_ROOT}/`;
+            }
         }
+
         return this;
     }
 }

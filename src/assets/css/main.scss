@@ -202,7 +202,11 @@ button, .asButton
     {
         color: rgba(var(--backgroundColour), 1);
         background-color: rgba(var(--foregroundColour), 1);
-        cursor: default !important;
+
+        &:not(.dontForceCursor)
+        {
+            cursor: default !important;
+        }
     }
 
     .fill

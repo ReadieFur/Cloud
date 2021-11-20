@@ -9,6 +9,7 @@
 
     require_once __DIR__ . '/../../../../api/account/accountFunctions.php';
     require_once __DIR__ . '/../../../../api/database/readie/cloud/cloud_files.php';
+    require_once __DIR__ . '/../../../../api/database/readie/cloud/cloud_file_shares.php';
     require_once __DIR__ . '/../../../../api/returnData.php';
 
     $phpData = new ReturnData('UNKNOWN_ERROR', true);
@@ -29,17 +30,47 @@
             if ($deleteResponse->error || $deleteResponse !== true) { $phpData = $deleteResponse; }
             else { $phpData = new ReturnData('NO_DATA_FOUND', true); }
         }
-        else if ($files->data[0]->isPrivate === '1')
+        else if ($files->data[0]->shareType != '2') //Not public
         {
+            //Verify the users session
             $sessionValid = AccountFunctions::VerifySession();
             if ($sessionValid->error) { $phpData = $sessionValid; }
-            else if (!$sessionValid->data || $_COOKIE['READIE_UID'] !== $files->data[0]->uid) { $phpData = new ReturnData('INVALID_CREDENTIALS', true); }
-            else
+
+            if ($sessionValid->data && $_COOKIE['READIE_UID'] === $files->data[0]->uid)
             {
                 $data = new stdClass();
                 $data->mimeType = mime_content_type(__DIR__ . '/../storage/userfiles/' . $files->data[0]->id);
                 $data->filePath = $WEB_ROOT . '/files/storage/' . $files->data[0]->id . '/';
                 $phpData = new ReturnData($data);
+            }
+            else
+            {
+                switch ($files->data[0]->shareType)
+                {
+                    case '0': //Private
+                        //We know that the user is not the owner of the file because of the check above so we can simply deny access here.
+                        $phpData = new ReturnData('INVALID_CREDENTIALS', true);
+                        break;
+                    case '1': //Invite
+                        $fileSharesTable = new cloud_file_shares(true);
+                        $fileShares = $fileSharesTable->Select(array("fid"=>$files->data[0]->id));
+                        if ($fileShares->error) { return $fileShares; }
+                        else if (empty($fileShares->data) || $fileShares->data[0] === null) { $phpData = new ReturnData("INVALID_CREDENTIALS", true); }
+                        else if (!in_array($_COOKIE['READIE_UID'], array_column($fileShares->data, 'uid'))) { $phpData = new ReturnData("INVALID_CREDENTIALS", true); }
+                        else
+                        {
+                            $data = new stdClass();
+                            $data->mimeType = mime_content_type(__DIR__ . '/../storage/userfiles/' . $files->data[0]->id);
+                            $data->filePath = $WEB_ROOT . '/files/storage/' . $files->data[0]->id . '/';
+                            $phpData = new ReturnData($data);
+                        }
+                        break;
+                    default:
+                        //Shouldn't be reached but if it is then return an error.
+                        http_response_code(500);
+                        exit();
+                        // break;
+                }
             }
         }
         else

@@ -2,7 +2,14 @@ import { Main, ReturnData } from "../assets/js/main.js";
 
 class Files
 {
+    private static readonly usernameRegex = /(?=.{4,20}$)(?![_.])(?!.*[_.]{2})[a-zA-Z0-9._]+(?<![_.])/m;
+
     private unfocus: HTMLInputElement;
+    private preview:
+    {
+        container: HTMLDivElement;
+        iframe: HTMLIFrameElement;
+    }
     private search: HTMLFormElement;
     private searchText: HTMLInputElement;
     private filesTable: HTMLTableElement;
@@ -13,14 +20,35 @@ class Files
     //private fileDrop: HTMLDivElement;
     private uploadForm: HTMLFormElement;
     private inputFile: HTMLInputElement;
-
+    private sharingMenu:
+    {
+        container: HTMLDivElement,
+        sharingTypes: HTMLSelectElement,
+        subMenus:
+        {
+            inviteOptions:
+            {
+                container: HTMLTableSectionElement,
+                usernameInput: HTMLInputElement,
+                inviteListElement: HTMLUListElement,
+                inviteList: string[]
+            }
+        },
+        unsavedChangesNotice: HTMLParagraphElement,
+        sharingLink: HTMLButtonElement,
+        saveButton: HTMLButtonElement
+    }
     private filesFilter: IFilesFilter;
 
     constructor()
     {
         new Main();
-
         this.unfocus = Main.ThrowIfNullOrUndefined(document.querySelector("#unfocus"));
+        this.preview =
+        {
+            container: Main.ThrowIfNullOrUndefined(document.querySelector("#filePreviewContainer")),
+            iframe: Main.ThrowIfNullOrUndefined(document.querySelector("#filePreview"))
+        };
         this.search = Main.ThrowIfNullOrUndefined(document.querySelector("#search"));
         this.searchText = Main.ThrowIfNullOrUndefined(document.querySelector("#searchText"));
         this.filesTable = Main.ThrowIfNullOrUndefined(document.querySelector("#files"));
@@ -31,7 +59,24 @@ class Files
         //this.fileDrop = Main.ThrowIfNullOrUndefined(document.querySelector("#fileDrop"));
         this.uploadForm = Main.ThrowIfNullOrUndefined(document.querySelector("#uploadForm"));
         this.inputFile = Main.ThrowIfNullOrUndefined(document.querySelector("#inputFile"));
-
+        this.sharingMenu =
+        {
+            container: Main.ThrowIfNullOrUndefined(document.querySelector("#sharingMenu")),
+            sharingTypes: Main.ThrowIfNullOrUndefined(document.querySelector("#sharingTypes")),
+            subMenus:
+            {
+                inviteOptions:
+                {
+                    container: Main.ThrowIfNullOrUndefined(document.querySelector("#inviteSharing")),
+                    usernameInput: Main.ThrowIfNullOrUndefined(document.querySelector("#inviteUser")),
+                    inviteListElement: Main.ThrowIfNullOrUndefined(document.querySelector("#inviteList")),
+                    inviteList: []
+                }
+            },
+            unsavedChangesNotice: Main.ThrowIfNullOrUndefined(document.querySelector("#unsavedSharingChangesNotice")),
+            sharingLink: Main.ThrowIfNullOrUndefined(document.querySelector("#sharingLink")),
+            saveButton: Main.ThrowIfNullOrUndefined(document.querySelector("#saveSharing"))
+        }
         this.filesFilter =
         {
             filter: "date",
@@ -47,6 +92,7 @@ class Files
             window.addEventListener("dragover", (ev) => { ev.preventDefault(); });
             window.addEventListener("drop", (ev) => { this.FileDrop(ev); });
         }*/
+        (<HTMLDivElement>Main.ThrowIfNullOrUndefined(document.querySelector("#filePreviewContainer > .background"))).addEventListener("click", () => { Main.FadeElement("none", this.preview.container); });
         this.search.addEventListener("submit", (ev) => { this.SearchFiles(ev); });
         this.uploadForm.setAttribute("action", "./files.php");
         this.uploadForm.setAttribute("method", "post");
@@ -88,12 +134,49 @@ class Files
             }
         }
 
+        Main.ThrowIfNullOrUndefined(document.querySelector("#sharingMenu > .background")).addEventListener("click", () => { Main.FadeElement("none", this.sharingMenu.container); });
+        Main.ThrowIfNullOrUndefined(document.querySelector("#sharingMenu > .container > form")).addEventListener("submit", (ev: Event) => { ev.preventDefault(); });
+        this.sharingMenu.subMenus.inviteOptions.usernameInput.addEventListener("keypress", (ev) =>
+        {
+            if (ev.key === " ")
+            {
+                ev.preventDefault();
+            }
+            else if (ev.key === "Enter" && this.AddUserToInviteList(this.sharingMenu.subMenus.inviteOptions.usernameInput.value))
+            {
+                this.sharingMenu.subMenus.inviteOptions.usernameInput.value = "";
+            }
+        });
+
         this.FilesPHP(
         {
             method: "getFiles",
             data: this.filesFilter,
             success: (response) => { this.GotFiles(response); }
         });
+    }
+
+    private AddUserToInviteList(username: string): boolean
+    {
+        //In the future check if the user is found on the database before adding them to the list, currently the check is only done when the save button is pressed.
+        username = username.toLowerCase();
+        if (username.match(Files.usernameRegex) && !this.sharingMenu.subMenus.inviteOptions.inviteList.includes(username))
+        {
+            this.sharingMenu.unsavedChangesNotice.style.display = "block";
+            var user = document.createElement("li");
+            user.innerText = username;
+            user.classList.add("light");
+            user.addEventListener("click", () =>
+            {
+                this.sharingMenu.subMenus.inviteOptions.inviteList.splice(this.sharingMenu.subMenus.inviteOptions.inviteList.indexOf(username), 1);
+                this.sharingMenu.subMenus.inviteOptions.inviteListElement.removeChild(user);
+            });
+            this.sharingMenu.subMenus.inviteOptions.inviteList.push(username);
+            this.sharingMenu.subMenus.inviteOptions.inviteListElement.appendChild(user);
+
+            return true;
+        }
+        else { return false; }
     }
 
     private UploadFile(ev: Event)
@@ -113,7 +196,8 @@ class Files
             name: filename,
             type: filetype,
             size: file.size,
-            isPrivate: '1',
+            shareType: 0,
+            sharedWith: [],
             dateAltered: file.lastModified
         }, true);
         fileRow.classList.add("uploading");
@@ -138,7 +222,6 @@ class Files
                 responseData.dateAltered *= 1000;
                 this.uploadsBody.removeChild(fileRow);
                 var uploadedFileRow = this.CreateFileRow(responseData);
-                uploadedFileRow.id = responseData.id;
                 //if (this.filesBody.lastChild !== null) { this.filesBody.removeChild(this.filesBody.lastChild); }
                 this.filesBody.insertBefore(uploadedFileRow, this.filesBody.firstChild);
             },
@@ -280,7 +363,6 @@ class Files
         {
             file.dateAltered *= 1000;
             var fileRow = this.CreateFileRow(file);
-            fileRow.id = file.id;
             this.filesBody.appendChild(fileRow);
         });
 
@@ -326,11 +408,101 @@ class Files
         });
     }
 
+    private SetSharingUIContents(file: IFile)
+    {
+        this.sharingMenu.subMenus.inviteOptions.inviteList = [];
+        this.sharingMenu.subMenus.inviteOptions.inviteListElement.innerHTML = "";
+
+        const instance = this;
+        function SetShareType(type: IFile["shareType"])
+        {
+            switch (type.toString())
+            {
+                case "1":
+                    instance.sharingMenu.subMenus.inviteOptions.container.style.display = "table-row-group";
+                    if (file.sharedWith !== undefined) { file.sharedWith.forEach(username => { instance.AddUserToInviteList(username); }); }
+                    break;
+                case "2":
+                    instance.sharingMenu.subMenus.inviteOptions.container.style.display = "none";
+                    break;
+                default: //0
+                    instance.sharingMenu.subMenus.inviteOptions.container.style.display = "none";
+                    break;
+            }
+        }
+
+        instance.sharingMenu.sharingTypes.value = file.shareType.toString();
+        SetShareType(file.shareType);
+
+        this.sharingMenu.sharingTypes.onchange = () =>
+        {
+            this.sharingMenu.unsavedChangesNotice.style.display = "block";
+            SetShareType(parseInt(this.sharingMenu.sharingTypes.value) as IFile["shareType"]);
+        };
+        this.sharingMenu.sharingLink.onclick = () => { navigator.clipboard.writeText(`${window.location.origin}${Main.WEB_ROOT}/files/view/${file.id}`); };
+        this.sharingMenu.saveButton.onclick = () => { this.SaveSharingOptions(file); };
+
+        this.sharingMenu.unsavedChangesNotice.style.display = "none";
+    }
+
+    private SaveSharingOptions(file: IFile)
+    {
+        var shareType: IFile["shareType"];
+        switch (this.sharingMenu.sharingTypes.value)
+        {
+            case "1":
+                shareType = 1;
+                break;
+            case "2":
+                shareType = 2;
+                break;
+            default: //0
+                shareType = 0;
+                break;
+        }
+
+        var updatedFile: IFile = { ...file };
+        updatedFile.shareType = shareType;
+        updatedFile.sharedWith = this.sharingMenu.subMenus.inviteOptions.inviteList;
+
+        //TODO: Store the file row element in memory so that it does not need to be queried and can be accessed easier. This will be necessary for when I will want to add a function for when files are updated as it would make the code neater, less repetitive, and could help with if files are updated elsewhere.
+        this.FilesPHP(
+        {
+            method: "updateFile",
+            data: updatedFile,
+            success: (response) =>
+            {
+                if (response.error)
+                {
+                    Main.Alert(Main.GetPHPErrorMessage(response.data));
+                    return;
+                }
+
+                const updatedFile: IFile = response.data;
+
+                var shareButton: HTMLButtonElement = Main.ThrowIfNullOrUndefined(document.querySelector(`#file_${file.id} > .optionsColumn > .joinButtons > .shareButton`)) as HTMLButtonElement;
+                if (updatedFile.shareType == 0) { shareButton.classList.remove("active"); }
+                else { shareButton.classList.add("active"); }
+                shareButton.onclick = async () =>
+                {
+                    this.SetSharingUIContents(updatedFile);
+                    await Main.FadeElement("block", this.sharingMenu.container);
+                };
+
+                this.sharingMenu.subMenus.inviteOptions.inviteList = [];
+                this.sharingMenu.subMenus.inviteOptions.inviteListElement.innerHTML = "";
+                updatedFile.sharedWith.forEach(username => { this.AddUserToInviteList(username); });
+
+                this.sharingMenu.unsavedChangesNotice.style.display = "none";
+            }
+        });
+    }
+
     private CreateFileRow(file: IFile, isUpload: boolean = false): HTMLTableRowElement
     {
         var tr = document.createElement("tr");
         tr.classList.add("listItem");
-        tr.id = file.id;
+        tr.id = `file_${file.id}`;
 
         var nameColumn = document.createElement("td");
         nameColumn.classList.add("nameColumn");
@@ -409,31 +581,14 @@ class Files
             downloadButton.addEventListener("click", () => { window.open(`${Main.WEB_ROOT}/files/storage/${file.id}/`); });
             optionsContainer.appendChild(downloadButton);
             var shareButton = document.createElement("button");
-            shareButton.innerText = "Public";
-            shareButton.addEventListener("click", () =>
+            shareButton.innerText = "Share";
+            shareButton.classList.add("shareButton", "dontForceCursor");
+            if (file.shareType != 0) { shareButton.classList.add("active"); }
+            shareButton.onclick = async () =>
             {
-                file.isPrivate = file.isPrivate === '1' ? '0' : '1';
-                this.FilesPHP(
-                {
-                    method: "updateFile",
-                    data: file,
-                    success: (response) =>
-                    {
-                        if (response.error)
-                        {
-                            file.isPrivate = file.isPrivate === '1' ? '0' : '1';
-                            Main.Alert(Main.GetPHPErrorMessage(response.data));
-                        }
-                        else
-                        {
-                            if (file.isPrivate === '1') { shareButton.classList.remove("active"); }
-                            else { shareButton.classList.add("active"); }
-                        }
-                    }
-                });
-            });
-            if (file.isPrivate === '1') { shareButton.classList.remove("active"); }
-            else { shareButton.classList.add("active"); }
+                this.SetSharingUIContents(file);
+                await Main.FadeElement("block", this.sharingMenu.container);
+            };
             optionsContainer.appendChild(shareButton);
             var deleteButton = document.createElement("button");
             deleteButton.innerText = "Delete";
@@ -454,7 +609,28 @@ class Files
             });
             optionsContainer.appendChild(deleteButton);
 
-            tr.addEventListener("click", (ev) => { if ((<HTMLElement>ev.target).tagName == "TD") { window.open(`${Main.WEB_ROOT}/files/view/${file.id}/`); } });
+            tr.addEventListener("click", (ev) =>
+            {
+                if ((<HTMLElement>ev.target).tagName == "TD" && ev.button == 0)
+                {
+                    if (ev.ctrlKey)
+                    {
+                        window.open(`${Main.WEB_ROOT}/files/view/${file.id}/`);
+                    }
+                    else
+                    {
+                        this.preview.iframe.src = `${Main.WEB_ROOT}/files/view/${file.id}/`;
+                        Main.FadeElement("block", this.preview.container);
+                    }
+                }
+            });
+            tr.addEventListener("mousedown", (ev) =>
+            {
+                if ((<HTMLElement>ev.target).tagName == "TD" && ev.button == 1)
+                {
+                    window.open(`${Main.WEB_ROOT}/files/view/${file.id}/`);
+                }
+            });
         }
         else
         {
@@ -563,7 +739,8 @@ interface IFile
     name: string,
     type: string,
     size: number,
-    isPrivate: '0' | '1',
+    shareType: 0 | 1 | 2,
+    sharedWith: string[],
     dateAltered: number
 }
 

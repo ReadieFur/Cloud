@@ -1,9 +1,11 @@
 <?php
 require_once __DIR__ . '/../../../api/account/accountFunctions.php';
+require_once __DIR__ . '/../../../api/database/credentials.php';
 require_once __DIR__ . '/../../../api/database/databaseHelper.php';
 require_once __DIR__ . '/../../../api/database/readie/users.php';
 require_once __DIR__ . '/../../../api/database/readie/cloud/cloud_permissions.php';
 require_once __DIR__ . '/../../../api/database/readie/cloud/cloud_files.php';
+require_once __DIR__ . '/../../../api/database/readie/cloud/cloud_file_shares.php';
 require_once __DIR__ . '/../../../api/returnData.php';
 
 //https://www.w3schools.com/php/php_file_upload.asp
@@ -14,12 +16,14 @@ class Files
     public users $usersTable;
     public cloud_permissions $permissionsTable;
     public cloud_files $filesTable;
+    public cloud_file_shares $sharesTable;
 
     function __construct($_request, $_files)
     {
         $this->usersTable = new users(true);
         $this->permissionsTable = new cloud_permissions(true);
         $this->filesTable = new cloud_files(true);
+        $this->sharesTable = new cloud_file_shares(true);
 
         echo json_encode($this->ProcessRequest($_request, $_files));
     }
@@ -69,7 +73,7 @@ class Files
                 'name'=>$fileName,
                 'type'=>$fileType,
                 'size'=>$_files['inputFile']['size'],
-                'isPrivate'=>'1',
+                'shareType'=>'0',
                 'dateAltered'=>Time()
             );
 
@@ -129,13 +133,19 @@ class Files
 
     private function UpdateFile(array $_data)
     {
+        global $dbServername;
+        global $dbName;
+        global $dbUsername;
+        global $dbPassword;
+
         if (
             !isset($_data['id']) ||
             !isset($_data['uid']) ||
             !isset($_data['name']) ||
             !isset($_data['type']) ||
             !isset($_data['size']) ||
-            !isset($_data['isPrivate']) ||
+            !isset($_data['shareType']) ||
+            !isset($_data['sharedWith']) ||
             !isset($_data['dateAltered'])
         )
         { return new ReturnData('INVALID_DATA', true); }
@@ -145,11 +155,13 @@ class Files
         else if (!isset($files->data[0])) { return new ReturnData('NO_RESULTS', true); }
         else if ($_COOKIE['READIE_UID'] !== $files->data[0]->uid) { return new ReturnData('INVALID_PERMISSIONS', true); }
 
+        if (!($_data['shareType'] == 0 || $_data['shareType'] == 1 || $_data['shareType'] == 2)) { return new ReturnData('INVALID_DATA' . $_data["shareType"], true); }
+
         $updatedFileResponse = $this->filesTable->Update(
             array(
                 'name'=>$this->GetValidFileName($_data['name']),
                 'type'=>$this->GetValidFileType($_data['type']),
-                'isPrivate'=>$_data['isPrivate'] == '1' ? '1' : '0',
+                'shareType'=>$_data['shareType'],
                 'dateAltered'=>Time()
             ),
             array(
@@ -158,7 +170,61 @@ class Files
         );
         if ($updatedFileResponse->error) { return $updatedFileResponse; }
         else if ($updatedFileResponse->data !== true) { return new ReturnData($updatedFileResponse->data, true); }
-        return new ReturnData(true);
+
+        if ($_data['shareType'] == '0') //Private
+        {
+            $deletedSharesResponse = $this->sharesTable->Delete(array('fid'=>$files->data[0]->id));
+            if ($deletedSharesResponse->error && $deletedSharesResponse->data != 'NO_RESULTS') { return $deletedSharesResponse; }
+            else if ($deletedSharesResponse->data !== true) { return new ReturnData($deletedSharesResponse->data, true); }
+            $_data['sharedWith'] = array();
+            return new ReturnData($_data);
+        }
+        else
+        {
+            $where = array();
+            for ($i = 0; $i < count($_data['sharedWith']); $i++)
+            {
+                $where[] = array('username', 'LIKE', $_data['sharedWith'][$i]);
+                $where[] = 'AND';
+            }
+            $where = array_slice($where, 0, -1);
+
+            $pdo = new PDO("mysql:host=$dbServername:3306;dbname=$dbName", $dbUsername, $dbPassword);
+            $dbi = new DatabaseInterface($pdo);
+            $foundUsers = $dbi
+                ->Table1('users')
+                ->Select(array('uid', 'username'))
+                ->Where($where)
+                ->Execute();
+            if ($foundUsers->error) { return $foundUsers; }
+            
+            //Make sure that the owner is not in the share list.
+            $foundUsers->data = array_filter($foundUsers->data, function($user) { return $user->uid !== $_COOKIE['READIE_UID']; });
+
+            $deleteOldSharesResponse = $this->sharesTable->Delete(array('fid'=>$files->data[0]->id));
+            if ($deleteOldSharesResponse->error) { return $deleteOldSharesResponse; }
+            else if ($deleteOldSharesResponse->data !== true) { return new ReturnData($deleteOldSharesResponse->data, true); }
+
+            $validUsersAdded = array();
+            //This isn't really efficent as I have to delete and add all of the users back to the share list one query at a time. In the future when I get round to improving my database helper class I should be able to make this more efficent.
+            foreach ($foundUsers->data as $user)
+            {
+                if (in_array($user->username, $_data['sharedWith']))
+                {
+                    $validUsersAdded[] = $user->username;
+                    $shareResponse = $this->sharesTable->Insert(
+                        array(
+                            'fid'=>$files->data[0]->id,
+                            'uid'=>$user->uid
+                        )
+                    );
+                    if ($shareResponse->error) { return $shareResponse; }
+                    else if ($shareResponse->data !== true) { return new ReturnData($shareResponse->data, true); }
+                }
+            }
+            $_data['sharedWith'] = $validUsersAdded;
+            return new ReturnData($_data);
+        }
     }
 
     private function GetFiles(array $_data)
@@ -207,7 +273,7 @@ class Files
                 $orderDescending = $_data['data'] === "asc" || $_data['data'] === "ascending" || $_data['data'] === "true" ? false : true;
                 break;
             case 'shared':
-                $order = 'isPrivate';
+                $order = 'shareType';
                 $orderDescending = $_data['data'] === "asc" || $_data['data'] === "ascending" || $_data['data'] === "true" ? false : true;
                 break;
             /*default:
@@ -229,8 +295,34 @@ class Files
             ->Execute();
         if ($filesFound->error) { return $filesFound; }
 
-        $dbi2 = new DatabaseInterface($pdo);
-        $filesCount = $dbi2
+        foreach ($filesFound->data as $key => $value)
+        {
+            if ($value->shareType == '0')
+            {
+                $filesFound->data[$key]->sharedWith = array();
+                $filesFound->data[$key]->sharedWith = [];
+            }
+            else
+            {
+                $dbi2 = new DatabaseInterface($pdo);
+                $sharesFound = $dbi2
+                    ->Table1('cloud_file_shares')
+                    ->Table2('users')
+                    ->Select(array('uid'), array('username'))
+                    ->On('uid')
+                    ->Where(array('fid'=>$value->id))
+                    ->Execute();
+                if ($sharesFound->error) { return $sharesFound; }
+                $filesFound->data[$key]->sharedWith = array();
+                foreach ($sharesFound->data as $share)
+                {
+                    $filesFound->data[$key]->sharedWith[] = $share->username;
+                }
+            }
+        }
+
+        $dbi3 = new DatabaseInterface($pdo);
+        $filesCount = $dbi3
             ->Table1('cloud_files')
             ->SelectCount()
             ->Where($where)
@@ -242,6 +334,7 @@ class Files
         $data->filesFound = intval($filesCount->data[0]->count);
         $data->startIndex = $startIndex;
         $data->resultsPerPage = $resultsPerPage;
+
         return new ReturnData($data);
     }
 

@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../../../../api/account/accountFunctions.php';
 require_once __DIR__ . '/../../../../api/database/readie/cloud/cloud_files.php';
+require_once __DIR__ . '/../../../../api/database/readie/cloud/cloud_file_shares.php';
 require_once __DIR__ . '/../../../../api/returnData.php';
 
 class FileData
@@ -44,11 +45,35 @@ class File
                 http_response_code(404);
                 exit();
             }
-            else if ($files->data[0]->isPrivate === '1')
+            else if ($files->data[0]->shareType != '2') //Not public
             {
+                //Verify the users session
                 $sessionValid = AccountFunctions::VerifySession();
-                if ($sessionValid->error) { http_response_code(500); exit(); }
-                else if (!$sessionValid->data || $_COOKIE['READIE_UID'] !== $files->data[0]->uid) { http_response_code(403); exit(); }
+                if ($sessionValid->error) { http_response_code(403); exit(); }
+
+                if ($sessionValid->data && $_COOKIE['READIE_UID'] !== $files->data[0]->uid)
+                {
+                    switch ($files->data[0]->shareType)
+                    {
+                        case '0': //Private
+                            //We know that the user is not the owner of the file because of the check above so we can simply deny access here.
+                            http_response_code(401);
+                            exit();
+                            break;
+                        case '1': //Invite
+                            $fileSharesTable = new cloud_file_shares(true);
+                            $fileShares = $fileSharesTable->Select(array("fid"=>$files->data[0]->id));
+                            if ($fileShares->error) { return $fileShares; }
+                            else if (empty($fileShares->data) || $fileShares->data[0] === null) { http_response_code(401); exit(); }
+                            else if (!in_array($_COOKIE['READIE_UID'], array_column($fileShares->data, 'uid'))) { http_response_code(401); exit(); }
+                            break;
+                        default:
+                            //Shouldn't be reached but if it is then return an error.
+                            http_response_code(500);
+                            exit();
+                            // break;
+                    }
+                }
             }
 
             if (session_status() == PHP_SESSION_NONE)
