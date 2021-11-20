@@ -17,7 +17,6 @@ class View
         }
 
         var parsedPHPData: ReturnData = JSON.parse(phpData);
-        console.log(parsedPHPData);
         if (parsedPHPData.error)
         {
             Main.Alert(Main.GetPHPErrorMessage(parsedPHPData.data));
