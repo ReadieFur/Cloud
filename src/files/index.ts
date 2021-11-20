@@ -92,7 +92,11 @@ class Files
             window.addEventListener("dragover", (ev) => { ev.preventDefault(); });
             window.addEventListener("drop", (ev) => { this.FileDrop(ev); });
         }*/
-        (<HTMLDivElement>Main.ThrowIfNullOrUndefined(document.querySelector("#filePreviewContainer > .background"))).addEventListener("click", () => { Main.FadeElement("none", this.preview.container); });
+        (<HTMLDivElement>Main.ThrowIfNullOrUndefined(document.querySelector("#filePreviewContainer > .background"))).addEventListener("click", () =>
+        {
+            Main.FadeElement("none", this.preview.container);
+            this.preview.iframe.src = "";
+        });
         this.search.addEventListener("submit", (ev) => { this.SearchFiles(ev); });
         this.uploadForm.setAttribute("action", "./files.php");
         this.uploadForm.setAttribute("method", "post");
