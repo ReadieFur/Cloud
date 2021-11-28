@@ -12,6 +12,12 @@
     require_once __DIR__ . '/../../../../api/database/readie/cloud/cloud_file_shares.php';
     require_once __DIR__ . '/../../../../api/returnData.php';
 
+    $baseUrl = $_SERVER['REQUEST_SCHEME'] . '://' . $_SERVER['HTTP_HOST'];
+    $urlFilePath = $WEB_ROOT . '/files/storage';
+    $urlThumbnailSuffix = '/thumbnail';
+    $localFilePath = __DIR__ . '/../storage/userfiles';
+    $localThumbnailSuffix = '_thumbnail';
+
     $phpData = new ReturnData('UNKNOWN_ERROR', true);
 
     $uri = array_filter(explode('/', $_SERVER['REQUEST_URI']), fn($part) => !is_null($part) && $part !== '');
@@ -38,10 +44,8 @@
 
             if ($sessionValid->data && $_COOKIE['READIE_UID'] === $files->data[0]->uid)
             {
-                $data = new stdClass();
-                $data->mimeType = mime_content_type(__DIR__ . '/../storage/userfiles/' . $files->data[0]->id);
-                $data->filePath = $WEB_ROOT . '/files/storage/' . $files->data[0]->id . '/';
-                $phpData = new ReturnData($data);
+                $files->data[0]->metadata = json_decode($files->data[0]->metadata);
+                $phpData = new ReturnData($files->data[0]);
             }
             else
             {
@@ -59,10 +63,8 @@
                         else if (!in_array($_COOKIE['READIE_UID'], array_column($fileShares->data, 'uid'))) { $phpData = new ReturnData("INVALID_CREDENTIALS", true); }
                         else
                         {
-                            $data = new stdClass();
-                            $data->mimeType = mime_content_type(__DIR__ . '/../storage/userfiles/' . $files->data[0]->id);
-                            $data->filePath = $WEB_ROOT . '/files/storage/' . $files->data[0]->id . '/';
-                            $phpData = new ReturnData($data);
+                            $files->data[0]->metadata = json_decode($files->data[0]->metadata);
+                            $phpData = new ReturnData($files->data[0]);
                         }
                         break;
                     default:
@@ -75,20 +77,16 @@
         }
         else
         {
-            $data = new stdClass();
-            $data->mimeType = mime_content_type(__DIR__ . '/../storage/userfiles/' . $files->data[0]->id);
-            $data->filePath = $WEB_ROOT . '/files/storage/' . $files->data[0]->id . '/';
-            $phpData = new ReturnData($data);
+            $files->data[0]->metadata = json_decode($files->data[0]->metadata);
+            $phpData = new ReturnData($files->data[0]);
         }
     }
 
-    $mimeTypeSplit = array();
-    $mimeParent = '';
+    $mimeTypeExploded = array();
     if (!$phpData->error)
     {
+        $mimeTypeExploded = explode('/', $phpData->data->metadata->mimeType);
         $title = 'View File - ' . $files->data[0]->name . '.' . $files->data[0]->type . ' | Cloud';
-        $mimeTypeSplit = array_filter(explode('/', $phpData->data->mimeType), fn($part) => !is_null($part) && $part !== '');
-        $mimeParent = !empty($mimeTypeSplit) ? $mimeTypeSplit[0] : '';
     }
 ?>
 <!DOCTYPE html>
@@ -96,51 +94,58 @@
 <head>
 <link rel="stylesheet" href="<?php echo $WEB_ROOT; ?>/files/view/view.css">
     <script src="<?php echo $WEB_ROOT; ?>/files/view/view.js" type="module"></script>
-    <script>var phpData = `<?php echo json_encode($phpData); ?>`;</script>
+    <script id="phpDataContainer">var phpData = `<?php echo json_encode($phpData); ?>`;</script>
     <?php
         if (!$phpData->error)
         {
-            //Set in head.php.
-            $ogType = $phpData->data->mimeType;
+            //Value set here to be used in head.php
+            $ogType = $mimeTypeExploded[0] . '.' . $mimeTypeExploded[1];
 
-            switch ($mimeParent)
+            switch ($mimeTypeExploded[0])
             {
                 case 'video':
                     ?>
-                        <!--<meta property="og:type" content="<?php echo $phpData->data->mimeType; ?>">-->
-                        <meta property="og:image" content="https://cdn.global-gaming.co/images/banner.png">  <!-- TMP while I try get ffmpeg thumbnails working -->
-                        <meta property="og:image:secure_url" content="https://cdn.global-gaming.co/images/banner.png">
-                        <meta property="og:image:type" content="image/jpeg">
-                        <meta property="og:image:width" content="1920">
-                        <meta property="og:image:height" content="1080">
-                        <meta property="og:video" content="<?php echo $_SERVER['REQUEST_SCHEME'] . '://' . $_SERVER['HTTP_HOST'] . $phpData->data->filePath; ?>">
-                        <meta property="og:video:url" content="<?php echo $_SERVER['REQUEST_SCHEME'] . '://' . $_SERVER['HTTP_HOST'] . $phpData->data->filePath; ?>">
-                        <meta property="og:video:secure_url" content="<?php echo $_SERVER['REQUEST_SCHEME'] . '://' . $_SERVER['HTTP_HOST'] . $phpData->data->filePath; ?>">
-                        <meta property="og:video:type" content="<?php echo $phpData->data->mimeType; ?>">
-                        <meta property="og:video:width" content="1920"> <!-- Make dynamic, do I need this? -->
-                        <meta property="og:video:height" content="1080"> <!-- Make dynamic, do I need this? -->
+                        <!-- <meta property="og:type" content="<?php echo $ogType; ?>"> -->
+                        <meta property="og:image" content="<?php echo $baseUrl . $urlFilePath . '/' . $phpData->data->id . $urlThumbnailSuffix; ?>">
+                        <meta property="og:image:secure_url" content="<?php echo $baseUrl . $urlFilePath . '/' . $phpData->data->id . $urlThumbnailSuffix; ?>">
+                        <meta property="og:image:type" content="<?php echo $phpData->data->metadata->thumbnailMimeType; ?>">
+                        <meta property="og:image:width" content="<?php echo $phpData->data->metadata->thumbnailWidth; ?>">
+                        <meta property="og:image:height" content="<?php echo $phpData->data->metadata->thumbnailHeight; ?>">
+                        <meta property="og:updated_time" content="<?php echo gmdate("Y-m-d\TH:i:s\Z", $phpData->data->dateAltered); ?>">
+                        <meta property="og:video" content="<?php echo $baseUrl . $urlFilePath . '/' . $phpData->data->id; ?>">
+                        <meta property="og:video:url" content="<?php echo $baseUrl . $urlFilePath . '/' . $phpData->data->id; ?>">
+                        <meta property="og:video:secure_url" content="<?php echo $baseUrl . $urlFilePath . '/' . $phpData->data->id; ?>">
+                        <meta property="og:video:type" content="<?php echo $phpData->data->metadata->mimeType; ?>">
+                        <meta property="og:video:width" content="<?php echo $phpData->data->metadata->width; ?>">
+                        <meta property="og:video:height" content="<?php echo $phpData->data->metadata->height; ?>">
                         <meta name="twitter:card" content="player">
-                        <meta name="twitter:image" content="https://cdn.global-gaming.co/images/banner.png">
-                        <meta property="og:video:width" content="1920"> <!-- Make dynamic, do I need this? -->
-                        <meta property="og:video:height" content="1080"> <!-- Make dynamic, do I need this? -->
-                        <meta name="twitter:player" content="<?php echo $_SERVER['REQUEST_SCHEME'] . '://' . $_SERVER['HTTP_HOST'] . $phpData->data->filePath; ?>">
+                        <meta name="twitter:image" content="<?php echo $baseUrl . $urlFilePath . '/' . $phpData->data->id . $urlThumbnailSuffix; ?>">
+                        <meta name="twitter:player:width" content="<?php echo $phpData->data->metadata->width; ?>">
+                        <meta name="twitter:player:height" content="<?php echo $phpData->data->metadata->height; ?>">
+                        <meta name="twitter:player" content="<?php echo $baseUrl . $urlFilePath . '/' . $phpData->data->id; ?>">
                     <?php
                     break;
                 case 'image':
                     ?>
-                        <!--<meta property="og:type" content="<?php echo $phpData->data->mimeType; ?>">-->
-                        <meta property="og:image" content="<?php echo $_SERVER['REQUEST_SCHEME'] . '://' . $_SERVER['HTTP_HOST'] . $phpData->data->filePath; ?>">  <!-- TMP while I try get ffmpeg thumbnails working -->
-                        <meta property="og:image:secure_url" content="<?php echo $_SERVER['REQUEST_SCHEME'] . '://' . $_SERVER['HTTP_HOST'] . $phpData->data->filePath; ?>">
-                        <meta property="og:image:type" content="<?php echo $phpData->data->mimeType; ?>"> <!-- Make dynamic, do I need this? -->
-                        <meta property="og:image:width" content="1080"> <!-- Make dynamic -->
-                        <meta property="og:image:height" content="1920"> <!-- Make dynamic -->
+                        <!-- <meta property="og:type" content="<?php echo $ogType; ?>"> -->
+                        <meta property="og:image" content="<?php echo $baseUrl . $urlFilePath . '/' . $phpData->data->id . $urlThumbnailSuffix; ?>">
+                        <meta property="og:image:secure_url" content="<?php echo $baseUrl . $urlFilePath . '/' . $phpData->data->id . $urlThumbnailSuffix; ?>">
+                        <meta property="og:image:type" content="<?php echo $phpData->data->metadata->thumbnailMimeType; ?>">
+                        <meta property="og:image:width" content="<?php echo $phpData->data->metadata->thumbnailWidth; ?>">
+                        <meta property="og:image:height" content="<?php echo $phpData->data->metadata->thumbnailHeight; ?>">
+                        <meta property="og:updated_time" content="<?php echo gmdate("Y-m-d\TH:i:s\Z", $phpData->data->dateAltered); ?>">
                         <meta name="twitter:card" content="image">
-                        <meta name="twitter:image" content="<?php echo $_SERVER['REQUEST_SCHEME'] . '://' . $_SERVER['HTTP_HOST'] . $phpData->data->filePath; ?>">
+                        <meta name="twitter:image" content="<?php echo $baseUrl . $urlFilePath . $urlThumbnailSuffix; ?>">
                     <?php
                     break;
                 /*case 'audio':
                     ?>
                     
+                    <?php
+                    break;*/
+                /*case 'text':
+                    ?>
+
                     <?php
                     break;*/
                 default:
@@ -158,29 +163,35 @@
             ?>
                 <section id="pageTitleContainer">
                     <div class="leftRight">
-                        <h4><?php echo $files->data[0]->name . '.' . $files->data[0]->type; ?></h4>
-                        <a class="asButton" href="<?php echo $phpData->data->filePath; ?>" target="_blank">Download</a>
+                        <h4><?php echo $phpData->data->name . '.' . $phpData->data->type; ?></h4>
+                        <a class="asButton" href="<?php echo $baseUrl . $urlFilePath . '/' . $phpData->data->id; ?>" target="_blank">Download</a>
                     </div>
                     <hr>
                     <br>
                 </section>
                 <span id="contentContainer">
                     <?php
-                        switch ($mimeParent)
+                        switch ($mimeTypeExploded[0])
                         {
                             case 'video':
                                 ?>
-                                    <video controls src="<?php echo $phpData->data->filePath; ?>"></video>
+                                    <video controls src="<?php echo $baseUrl . $urlFilePath . '/' . $phpData->data->id; ?>"></video>
                                 <?php
                                 break;
                             case 'image':
                                 ?>
-                                    <img src="<?php echo $phpData->data->filePath; ?>">
+                                    <img src="<?php echo $baseUrl . $urlFilePath . '/' . $phpData->data->id; ?>">
                                 <?php
                                 break;
                             case 'audio':
                                 ?>
-                                    <audio controls src="<?php echo $phpData->data->filePath; ?>"></audio>
+                                    <audio controls src="<?php echo $baseUrl . $urlFilePath . '/' . $phpData->data->id; ?>"></audio>
+                                <?php
+                                break;
+                            case 'text':
+                                ?>
+                                    <!-- Set in the TS file. -->
+                                    <!-- <pre></pre> -->
                                 <?php
                                 break;
                             default:

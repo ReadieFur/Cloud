@@ -7,5 +7,6 @@ tmp/
 *.css
 node_modules/
 pnpm-lock.yaml
-/overlay/
 /src/files/storage/userfiles/
+/src/assets/php/vendor/
+/src/assets/php/composer.*

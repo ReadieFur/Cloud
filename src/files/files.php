@@ -7,12 +7,21 @@ require_once __DIR__ . '/../../../api/database/readie/cloud/cloud_permissions.ph
 require_once __DIR__ . '/../../../api/database/readie/cloud/cloud_files.php';
 require_once __DIR__ . '/../../../api/database/readie/cloud/cloud_file_shares.php';
 require_once __DIR__ . '/../../../api/returnData.php';
+require_once __DIR__ . '/../assets/php/metadata.php';
+require_once __DIR__ . '/../assets/php/vendor/autoload.php';
 
 //https://www.w3schools.com/php/php_file_upload.asp
 //http://talkerscode.com/webtricks/file-upload-progress-bar-using-jquery-and-php.php
 
 class Files
 {
+    const FILE_PATH = __DIR__ . '/storage/userfiles';
+    const THUMBNAIL_SUFFIX = '_thumbnail';
+    const FF_PATHS = array(
+        'ffmpeg.binaries' => '/usr/bin/ffmpeg',
+        'ffprobe.binaries' => '/usr/bin/ffprobe'
+    );
+
     public users $usersTable;
     public cloud_permissions $permissionsTable;
     public cloud_files $filesTable;
@@ -49,46 +58,7 @@ class Files
 
         if (!empty($_files))
         {
-            if (!is_uploaded_file($_files['inputFile']['tmp_name'])) { return new ReturnData('INCORRECT_PROTOCOL'); }
-            else if (!isset($_files['inputFile'])) { return new ReturnData('NO_DATA_FOUND', true); }
-            else if ($_files['inputFile']['error'] !== 0) { return new ReturnData('UPLOAD_ERROR', true); }
-
-            $id = '';
-            do
-            {
-                $id = str_replace('.', '', uniqid('', true));
-                $existingIDs = $this->filesTable->Select(array('id'=>$id));
-                if ($existingIDs->error) { return $existingIDs; }
-            }
-            while (count($existingIDs->data) > 0);
-
-            $typeSeperatorIndex = strrpos($_files['inputFile']['name'], '.');
-            $fileName = $this->GetValidFileName($typeSeperatorIndex !== false ? substr($_files['inputFile']['name'], 0, $typeSeperatorIndex) : $_files['inputFile']['name']);
-            $fileType = $this->GetValidFileType($typeSeperatorIndex !== false ? substr($_files['inputFile']['name'], $typeSeperatorIndex + 1) : "");
-
-            //$tableData = new cloud_files();
-            $tableData = array(
-                'id'=>$id,
-                'uid'=>$_COOKIE['READIE_UID'],
-                'name'=>$fileName,
-                'type'=>$fileType,
-                'size'=>$_files['inputFile']['size'],
-                'shareType'=>'0',
-                'dateAltered'=>Time()
-            );
-
-            $response = $this->filesTable->Insert($tableData);
-            if ($response->error) { return $response; }
-            else if ($response->data !== true) { return new ReturnData(true, true); }
-
-            if (!move_uploaded_file($_files['inputFile']['tmp_name'], __DIR__ . '/storage/userfiles/' . $id . ''))
-            {
-                //If this fails then something critical has happened.
-                $this->filesTable->Delete($tableData);
-                return new ReturnData('SERVER_ERROR', true);
-            }
-
-            return new ReturnData($tableData);
+            return $this->UploadFile($_files);
         }
         else
         {
@@ -113,6 +83,120 @@ class Files
         }
     }
 
+    private function UploadFile($_files)
+    {
+        if (!is_uploaded_file($_files['inputFile']['tmp_name'])) { return new ReturnData('INCORRECT_PROTOCOL'); }
+        else if (!isset($_files['inputFile'])) { return new ReturnData('NO_DATA_FOUND', true); }
+        else if ($_files['inputFile']['error'] !== 0) { return new ReturnData('UPLOAD_ERROR', true); }
+
+        $id = '';
+        do
+        {
+            $id = str_replace('.', '', uniqid('', true));
+            $existingIDs = $this->filesTable->Select(array('id'=>$id));
+            if ($existingIDs->error) { return $existingIDs; }
+        }
+        while (count($existingIDs->data) > 0);
+
+        $mimeType = mime_content_type($_files['inputFile']['tmp_name']);
+        $metaData = new MetaData();
+        switch (explode('/', $mimeType)[0])
+        {
+            case 'image':
+                $metaData = new ImageMetaData();
+
+                //https://www.php.net/manual/en/function.getimagesize.php
+                list($width, $height) = getimagesize($_files['inputFile']['tmp_name']);
+                $metaData->width = $width;
+                $metaData->height = $height;
+                break;
+            case 'video':
+                $metaData = new VideoMetaData();
+
+                #region Create the video thumbnail.
+                $tmpFile = tmpfile();
+                $tmpFilePath = stream_get_meta_data($tmpFile)['uri'];
+                try
+                {
+                    $ffmpeg = FFMpeg\FFMpeg::create(Files::FF_PATHS);
+                    $video = $ffmpeg->open($_files['inputFile']['tmp_name']);
+                    $frame = $video->frame(FFMpeg\Coordinate\TimeCode::fromSeconds(1));
+                    $frame->save($tmpFilePath);
+                    //This seemed to be giving a string that I couldn't parse back to an image.
+                    // $ffmpegBase64 = $frame->save(null, false, true);
+                }
+                catch (Exception $e) { return new ReturnData('SERVER_ERROR', true); }
+    
+                //Resize the image if larger than 480p.
+                $targetWidth = 852;
+                $targetHeight = 480;
+                list($originalWidth, $originalHeight) = getimagesize($tmpFilePath);
+                if ($originalWidth > $targetWidth || $originalHeight > $targetHeight)
+                {
+                    $ratio = $originalWidth / $originalHeight;
+                    if ($targetWidth / $targetHeight > $ratio)
+                    {
+                        $newWidth = $targetHeight * $ratio;
+                        $newHeight = $targetHeight;
+                    }
+                    else
+                    {
+                        $newHeight = $targetWidth / $ratio;
+                        $newWidth = $targetWidth;
+                    }
+                    if (($src = imagecreatefromjpeg($tmpFilePath)) === false) { return new ReturnData('SERVER_ERROR', true); }
+                    if (($dst = imagecreatetruecolor($newWidth, $newHeight)) === false) { return new ReturnData('SERVER_ERROR', true); }
+                    if (!imagecopyresampled($dst, $src, 0, 0, 0, 0, $newWidth, $newHeight, $originalWidth, $originalHeight))
+                    { return new ReturnData('SERVER_ERROR', true); }
+                    if(!imagejpeg($dst, Files::FILE_PATH . '/' . $id . Files::THUMBNAIL_SUFFIX)) { return new ReturnData('SERVER_ERROR', true); }
+                }
+                else if (!copy($tmpFilePath, Files::FILE_PATH . '/' . $id . Files::THUMBNAIL_SUFFIX)) { return new ReturnData('SERVER_ERROR', true); }
+    
+                fclose($tmpFile);
+
+                $metaData->thumbnailMimeType = mime_content_type(Files::FILE_PATH . '/' . $id . Files::THUMBNAIL_SUFFIX);
+                list($thumbnailWidth, $thumbnailHeight) = getimagesize(Files::FILE_PATH . '/' . $id . Files::THUMBNAIL_SUFFIX);
+                $metaData->thumbnailWidth = $thumbnailWidth;
+                $metaData->thumbnailHeight = $thumbnailHeight;
+                #endregion
+    
+                #region Get the video metadata.
+                $ffprobe = FFMpeg\FFProbe::create(Files::FF_PATHS);
+                $format = $ffprobe->format($_files['inputFile']['tmp_name']);
+                $stream = $ffprobe->streams($_files['inputFile']['tmp_name'])->videos()->first();
+                $metaData->duration = floatval($format->get('duration'));
+                $metaData->bitrate = intval($stream->get('bit_rate'));
+                $metaData->codec = $stream->get('codec_name');
+                $metaData->width = intval($stream->get('width'));
+                $metaData->height = intval($stream->get('height'));
+                $metaData->frameRate = floatval(explode('/', $stream->get('r_frame_rate'))[0]);
+                break;
+        }
+        $metaData->mimeType = $mimeType;
+
+        if (!move_uploaded_file($_files['inputFile']['tmp_name'], Files::FILE_PATH . '/' . $id))
+        { return new ReturnData('SERVER_ERROR', true); }
+
+        //$tableData = new cloud_files();
+        $typeSeperatorIndex = strrpos($_files['inputFile']['name'], '.');
+        $tableData = array(
+            'id'=>$id,
+            'uid'=>$_COOKIE['READIE_UID'],
+            'name'=>$this->GetValidFileName($typeSeperatorIndex !== false ? substr($_files['inputFile']['name'], 0, $typeSeperatorIndex) : $_files['inputFile']['name']),
+            'type'=>$this->GetValidFileType($typeSeperatorIndex !== false ? substr($_files['inputFile']['name'], $typeSeperatorIndex + 1) : ""),
+            'size'=>$_files['inputFile']['size'],
+            'metadata'=>json_encode($metaData),
+            'shareType'=>'0',
+            'dateAltered'=>Time()
+        );
+
+        $response = $this->filesTable->Insert($tableData);
+        if ($response->error) { return $response; }
+        else if ($response->data !== true) { return new ReturnData(true, true); }
+
+        return new ReturnData($tableData);
+    }
+
     private function DeleteFile(array $_data)
     {
         if (!isset($_data['id'])) { return new ReturnData('INVALID_DATA', true); }
@@ -122,8 +206,13 @@ class Files
         else if (!isset($files->data[0])) { return new ReturnData('NO_RESULTS', true); }
         else if ($_COOKIE['READIE_UID'] !== $files->data[0]->uid) { return new ReturnData('INVALID_PERMISSIONS', true); }
 
-        $localFileDeleted = unlink(__DIR__ . '/storage/userfiles/' . $files->data[0]->id);
+        $localFileDeleted = unlink(Files::FILE_PATH . '/' . $files->data[0]->id);
         if (!$localFileDeleted) { return new ReturnData('SERVER_ERROR', true); }
+        if (file_exists(Files::FILE_PATH . '/' . $files->data[0]->id . Files::THUMBNAIL_SUFFIX))
+        {
+            $localThumbnailDeleted = unlink(Files::FILE_PATH . '/' . $files->data[0]->id . Files::THUMBNAIL_SUFFIX);
+            if (!$localThumbnailDeleted) { return new ReturnData('SERVER_ERROR', true); }
+        }
 
         $deleteResponse = $this->filesTable->Delete(array('id'=>$files->data[0]->id));
         if ($deleteResponse->error) { return $deleteResponse; }
@@ -145,8 +234,7 @@ class Files
             !isset($_data['type']) ||
             !isset($_data['size']) ||
             !isset($_data['shareType']) ||
-            !isset($_data['sharedWith']) ||
-            !isset($_data['dateAltered'])
+            !isset($_data['sharedWith'])
         )
         { return new ReturnData('INVALID_DATA', true); }
 

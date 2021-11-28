@@ -173,6 +173,76 @@ export class Main
         }
     }
 
+    public static async XHR(data:
+    {
+        url: string,
+        method: 'GET' | 'POST',
+        parameters?: IDictionary<any>,
+        headers?: IDictionary<string>,
+    }): Promise<{xhr: XMLHttpRequest, response: any}>
+    {
+        return new Promise<{xhr: XMLHttpRequest, response: any}>((resolve, reject) =>
+        {
+            var xhr = new XMLHttpRequest();
+            xhr.open(data.method, data.url, true);
+            
+            if (data.headers !== undefined)
+            {
+                for (var hKey in data.headers)
+                {
+                    xhr.setRequestHeader(hKey, data.headers[hKey]);
+                }
+            }
+
+            xhr.onreadystatechange = () =>
+            {
+                if (xhr.readyState == 4)
+                {
+                    if (xhr.status == 200)
+                    {
+                        try
+                        {
+                            resolve({
+                                xhr: xhr,
+                                response: xhr.response
+                            });
+                        }
+                        catch (e)
+                        {
+                            reject({
+                                status: xhr.status,
+                                text: xhr.responseText,
+                                error: e
+                            });
+                        }
+                    }
+                    else
+                    {
+                        reject({
+                            status: xhr.status,
+                            text: xhr.statusText,
+                            error: undefined
+                        });
+                    }
+                }
+            };
+
+            if (data.parameters !== undefined)
+            {
+                var params = new URLSearchParams();
+                for (var pKey in data.parameters)
+                {
+                    params.set(encodeURIComponent(pKey), encodeURIComponent(data.parameters[pKey]));
+                }
+                xhr.send(params.toString());
+            }
+            else
+            {
+                xhr.send();
+            }
+        });
+    }
+
     public static AccountMenuToggle(show: boolean)
     {
         if (show)
@@ -448,7 +518,7 @@ export class Main
             case "NOT_LOGGED_IN":
                 return "Not logged in.";
             case "SERVER_ERROR":
-                return "server error.";
+                return "Server error.";
             case "INCORRECT_PROTOCOL":
                 return "Incorrect protocol.";
             case "UPLOAD_ERROR":
@@ -463,4 +533,9 @@ export interface ReturnData
 {
     error: boolean,
     data: any
+}
+
+export interface IDictionary<T>
+{
+    [key: string]: T;
 }

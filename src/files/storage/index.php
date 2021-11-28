@@ -14,6 +14,9 @@ class FileData
 
 class File
 {
+    const FILE_PATH = __DIR__ . '/userfiles';
+    const THUMBNAIL_SUFFIX = '_thumbnail';
+
     function __construct()
     {
         $fileData = new FileData();
@@ -30,17 +33,31 @@ class File
         {
             //Check if the user is allowed to access the file.
             $uri = array_filter(explode('/', $_SERVER['REQUEST_URI']), fn($part) => !is_null($part) && $part !== '');
-
-            if ($uri[count($uri) - 1] !== 'storage' || (is_null($uri[count($uri)]) || $uri[count($uri)] === '')) { http_response_code(403); exit(); }
+            $id = '';
+            $getThumbnail = false;
+            if ($uri[count($uri) - 2] === 'storage' && !ctype_space($uri[count($uri) - 1]) && $uri[count($uri)] === 'thumbnail')
+            {
+                $id = $uri[count($uri) - 1];
+                $getThumbnail = true;
+            }
+            else if ($uri[count($uri) - 1] === 'storage' && !ctype_space($uri[count($uri)]))
+            {
+                $id = $uri[count($uri)];
+            }
+            else
+            {
+                http_response_code(403);
+                exit();
+            }
     
             $filesTable = new cloud_files(true);
     
-            $files = $filesTable->Select(array('id'=>$uri[count($uri)]));
+            $files = $filesTable->Select(array('id'=>$id));
             if ($files->error) { http_response_code(500); exit(); }
             else if (empty($files->data) || $files->data[0] === null) { http_response_code(404); exit(); }
             else if (!file_exists(__DIR__ . '/userfiles/' . $files->data[0]->id))
             {
-                $deleteResponse = $filesTable->Delete(array('id'=>$uri[count($uri)]));
+                $deleteResponse = $filesTable->Delete(array('id'=>$id));
                 if ($deleteResponse->error || $deleteResponse !== true) { http_response_code(500); exit(); }
                 http_response_code(404);
                 exit();
@@ -80,16 +97,26 @@ class File
             {
                 session_start();
                 $_SESSION['URL'] = $_SERVER['REQUEST_URI'];
-                $fileData->id = $_SESSION['id'] = strval($files->data[0]->id);
-                $fileData->name = $_SESSION['name'] = $files->data[0]->name;
-                $fileData->type = $_SESSION['type'] = $files->data[0]->type;
-                $fileData->size = $_SESSION['size'] = $files->data[0]->size;
+                if (!$getThumbnail)
+                {
+                    $fileData->id = $_SESSION['id'] = strval($files->data[0]->id);
+                    $fileData->name = $_SESSION['name'] = $files->data[0]->name;
+                    $fileData->type = $_SESSION['type'] = $files->data[0]->type;
+                    $fileData->size = $_SESSION['size'] = $files->data[0]->size;
+                }
+                else
+                {
+                    $fileData->id = $_SESSION['id'] = strval($files->data[0]->id) . File::THUMBNAIL_SUFFIX;
+                    $fileData->name = $_SESSION['name'] = $files->data[0]->name . File::THUMBNAIL_SUFFIX;
+                    $fileData->type = $_SESSION['type'] = mime_content_type(File::FILE_PATH . '/' . $files->data[0]->id . File::THUMBNAIL_SUFFIX);
+                    $fileData->size = $_SESSION['size'] = filesize(File::FILE_PATH . '/' . $files->data[0]->id . File::THUMBNAIL_SUFFIX);
+                }
             }
         }
 
         //Stream the file.
         $fileStream = new FileStream(
-            __DIR__ . '/userfiles/' . $fileData->id,
+            File::FILE_PATH . '/' . $fileData->id,
             $fileData->name,
             $fileData->type
         );

@@ -1,4 +1,5 @@
 import { Main, ReturnData } from "../assets/js/main.js";
+import * as Interfaces from "../assets/js/interfaces.js";
 
 class Files
 {
@@ -200,9 +201,13 @@ class Files
             name: filename,
             type: filetype,
             size: file.size,
+            metadata:
+            {
+                mimeType: file.type,
+            },
             shareType: 0,
             sharedWith: [],
-            dateAltered: file.lastModified
+            dateAltered: new Date().getTime(),
         }, true);
         fileRow.classList.add("uploading");
         fileRow.style.background = `linear-gradient(90deg, rgba(var(--accentColour), 1) 0%, transparent 0%)`;
@@ -222,7 +227,7 @@ class Files
                 if (response.error) { Main.Alert(Main.GetPHPErrorMessage(response.data)); return; }
 
                 //I could just also reload all the file listings here.
-                var responseData: IFile = response.data;
+                var responseData: Interfaces.IFile = response.data;
                 responseData.dateAltered *= 1000;
                 this.uploadsBody.removeChild(fileRow);
                 var uploadedFileRow = this.CreateFileRow(responseData);
@@ -412,13 +417,13 @@ class Files
         });
     }
 
-    private SetSharingUIContents(file: IFile)
+    private SetSharingUIContents(file: Interfaces.IFile)
     {
         this.sharingMenu.subMenus.inviteOptions.inviteList = [];
         this.sharingMenu.subMenus.inviteOptions.inviteListElement.innerHTML = "";
 
         const instance = this;
-        function SetShareType(type: IFile["shareType"])
+        function SetShareType(type: Interfaces.IFile["shareType"])
         {
             switch (type.toString())
             {
@@ -441,7 +446,7 @@ class Files
         this.sharingMenu.sharingTypes.onchange = () =>
         {
             this.sharingMenu.unsavedChangesNotice.style.display = "block";
-            SetShareType(parseInt(this.sharingMenu.sharingTypes.value) as IFile["shareType"]);
+            SetShareType(parseInt(this.sharingMenu.sharingTypes.value) as Interfaces.IFile["shareType"]);
         };
         this.sharingMenu.sharingLink.onclick = () => { navigator.clipboard.writeText(`${window.location.origin}${Main.WEB_ROOT}/files/view/${file.id}`); };
         this.sharingMenu.saveButton.onclick = () => { this.SaveSharingOptions(file); };
@@ -449,9 +454,9 @@ class Files
         this.sharingMenu.unsavedChangesNotice.style.display = "none";
     }
 
-    private SaveSharingOptions(file: IFile)
+    private SaveSharingOptions(file: Interfaces.IFile)
     {
-        var shareType: IFile["shareType"];
+        var shareType: Interfaces.IFile["shareType"];
         switch (this.sharingMenu.sharingTypes.value)
         {
             case "1":
@@ -465,9 +470,16 @@ class Files
                 break;
         }
 
-        var updatedFile: IFile = { ...file };
-        updatedFile.shareType = shareType;
-        updatedFile.sharedWith = this.sharingMenu.subMenus.inviteOptions.inviteList;
+        var updatedFile: Interfaces._IFile =
+        {
+            id: file.id,
+            uid: file.uid,
+            name: file.name,
+            type: file.type,
+            size: file.size,
+            shareType: shareType,
+            sharedWith: this.sharingMenu.subMenus.inviteOptions.inviteList
+        };
 
         //TODO: Store the file row element in memory so that it does not need to be queried and can be accessed easier. This will be necessary for when I will want to add a function for when files are updated as it would make the code neater, less repetitive, and could help with if files are updated elsewhere.
         this.FilesPHP(
@@ -482,27 +494,27 @@ class Files
                     return;
                 }
 
-                const updatedFile: IFile = response.data;
+                const updatedFileResponse: Interfaces.IFile = response.data;
 
                 var shareButton: HTMLButtonElement = Main.ThrowIfNullOrUndefined(document.querySelector(`#file_${file.id} > .optionsColumn > .joinButtons > .shareButton`)) as HTMLButtonElement;
-                if (updatedFile.shareType == 0) { shareButton.classList.remove("active"); }
+                if (updatedFileResponse.shareType == 0) { shareButton.classList.remove("active"); }
                 else { shareButton.classList.add("active"); }
                 shareButton.onclick = async () =>
                 {
-                    this.SetSharingUIContents(updatedFile);
+                    this.SetSharingUIContents(updatedFileResponse);
                     await Main.FadeElement("block", this.sharingMenu.container);
                 };
 
                 this.sharingMenu.subMenus.inviteOptions.inviteList = [];
                 this.sharingMenu.subMenus.inviteOptions.inviteListElement.innerHTML = "";
-                updatedFile.sharedWith.forEach(username => { this.AddUserToInviteList(username); });
+                updatedFileResponse.sharedWith.forEach(username => { this.AddUserToInviteList(username); });
 
                 this.sharingMenu.unsavedChangesNotice.style.display = "none";
             }
         });
     }
 
-    private CreateFileRow(file: IFile, isUpload: boolean = false): HTMLTableRowElement
+    private CreateFileRow(file: Interfaces.IFile, isUpload: boolean = false): HTMLTableRowElement
     {
         var tr = document.createElement("tr");
         tr.classList.add("listItem");
@@ -730,22 +742,10 @@ interface IFilesFilter
 
 interface IFileResponse
 {
-    files: IFile[],
+    files: Interfaces.IFile[],
     filesFound: number,
     resultsPerPage: number,
     startIndex: number
-}
-
-interface IFile
-{
-    id: string,
-    uid: string,
-    name: string,
-    type: string,
-    size: number,
-    shareType: 0 | 1 | 2,
-    sharedWith: string[],
-    dateAltered: number
 }
 
 interface IAJAXSubmit
