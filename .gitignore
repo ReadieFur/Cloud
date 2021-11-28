@@ -10,3 +10,4 @@ pnpm-lock.yaml
 /src/files/storage/userfiles/
 /src/assets/php/vendor/
 /src/assets/php/composer.*
+/test_files/

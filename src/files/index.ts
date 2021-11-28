@@ -594,7 +594,7 @@ class Files
             optionsContainer.classList.add("joinButtons");
             var downloadButton = document.createElement("button");
             downloadButton.innerText = "Download";
-            downloadButton.addEventListener("click", () => { window.open(`${Main.WEB_ROOT}/files/storage/${file.id}/`); });
+            downloadButton.addEventListener("click", () => { window.open(`${Main.WEB_ROOT}/files/storage/${file.id}.${file.type}`); });
             optionsContainer.appendChild(downloadButton);
             var shareButton = document.createElement("button");
             shareButton.innerText = "Share";

@@ -14,7 +14,7 @@
 
     $baseUrl = $_SERVER['REQUEST_SCHEME'] . '://' . $_SERVER['HTTP_HOST'];
     $urlFilePath = $WEB_ROOT . '/files/storage';
-    $urlThumbnailSuffix = '/thumbnail';
+    $urlThumbnailSuffix . $thumbnailExtension = '/thumbnail';
     $localFilePath = __DIR__ . '/../storage/userfiles';
     $localThumbnailSuffix = '_thumbnail';
 
@@ -22,7 +22,7 @@
 
     $uri = array_filter(explode('/', $_SERVER['REQUEST_URI']), fn($part) => !is_null($part) && $part !== '');
 
-    if ($uri[count($uri) - 1] !== 'view' || (is_null($uri[count($uri)]) || $uri[count($uri)] === '')) { $phpData = new ReturnData('INVALID_PATH', true); }
+    if ($uri[count($uri) - 1] !== 'view' || ctype_space($uri[count($uri)])) { $phpData = new ReturnData('INVALID_PATH', true); }
     else
     {
         $filesTable = new cloud_files(true);
@@ -100,42 +100,44 @@
         {
             //Value set here to be used in head.php
             $ogType = $mimeTypeExploded[0] . '.' . $mimeTypeExploded[1];
+            $fileExtension = '.' . $mimeTypeExploded[1];
 
             switch ($mimeTypeExploded[0])
             {
                 case 'video':
+                    $thumbnailExtension = '.' . (explode('/', $phpData->data->metadata->thumbnailMimeType)[1]);
                     ?>
                         <!-- <meta property="og:type" content="<?php echo $ogType; ?>"> -->
-                        <meta property="og:image" content="<?php echo $baseUrl . $urlFilePath . '/' . $phpData->data->id . $urlThumbnailSuffix; ?>">
-                        <meta property="og:image:secure_url" content="<?php echo $baseUrl . $urlFilePath . '/' . $phpData->data->id . $urlThumbnailSuffix; ?>">
+                        <meta property="og:image" content="<?php echo $baseUrl . $urlFilePath . '/' . $phpData->data->id . $urlThumbnailSuffix . $thumbnailExtension; ?>">
+                        <meta property="og:image:secure_url" content="<?php echo $baseUrl . $urlFilePath . '/' . $phpData->data->id . $urlThumbnailSuffix . $thumbnailExtension; ?>">
                         <meta property="og:image:type" content="<?php echo $phpData->data->metadata->thumbnailMimeType; ?>">
                         <meta property="og:image:width" content="<?php echo $phpData->data->metadata->thumbnailWidth; ?>">
                         <meta property="og:image:height" content="<?php echo $phpData->data->metadata->thumbnailHeight; ?>">
                         <meta property="og:updated_time" content="<?php echo gmdate("Y-m-d\TH:i:s\Z", $phpData->data->dateAltered); ?>">
-                        <meta property="og:video" content="<?php echo $baseUrl . $urlFilePath . '/' . $phpData->data->id; ?>">
-                        <meta property="og:video:url" content="<?php echo $baseUrl . $urlFilePath . '/' . $phpData->data->id; ?>">
-                        <meta property="og:video:secure_url" content="<?php echo $baseUrl . $urlFilePath . '/' . $phpData->data->id; ?>">
+                        <meta property="og:video" content="<?php echo $baseUrl . $urlFilePath . '/' . $phpData->data->id . $fileExtension; ?>">
+                        <meta property="og:video:url" content="<?php echo $baseUrl . $urlFilePath . '/' . $phpData->data->id . $fileExtension; ?>">
+                        <meta property="og:video:secure_url" content="<?php echo $baseUrl . $urlFilePath . '/' . $phpData->data->id . $fileExtension; ?>">
                         <meta property="og:video:type" content="<?php echo $phpData->data->metadata->mimeType; ?>">
                         <meta property="og:video:width" content="<?php echo $phpData->data->metadata->width; ?>">
                         <meta property="og:video:height" content="<?php echo $phpData->data->metadata->height; ?>">
                         <meta name="twitter:card" content="player">
-                        <meta name="twitter:image" content="<?php echo $baseUrl . $urlFilePath . '/' . $phpData->data->id . $urlThumbnailSuffix; ?>">
+                        <meta name="twitter:image" content="<?php echo $baseUrl . $urlFilePath . '/' . $phpData->data->id . $urlThumbnailSuffix . $thumbnailExtension; ?>">
                         <meta name="twitter:player:width" content="<?php echo $phpData->data->metadata->width; ?>">
                         <meta name="twitter:player:height" content="<?php echo $phpData->data->metadata->height; ?>">
-                        <meta name="twitter:player" content="<?php echo $baseUrl . $urlFilePath . '/' . $phpData->data->id; ?>">
+                        <meta name="twitter:player" content="<?php echo $baseUrl . $urlFilePath . '/' . $phpData->data->id . $fileExtension; ?>">
                     <?php
                     break;
                 case 'image':
                     ?>
                         <!-- <meta property="og:type" content="<?php echo $ogType; ?>"> -->
-                        <meta property="og:image" content="<?php echo $baseUrl . $urlFilePath . '/' . $phpData->data->id . $urlThumbnailSuffix; ?>">
-                        <meta property="og:image:secure_url" content="<?php echo $baseUrl . $urlFilePath . '/' . $phpData->data->id . $urlThumbnailSuffix; ?>">
-                        <meta property="og:image:type" content="<?php echo $phpData->data->metadata->thumbnailMimeType; ?>">
-                        <meta property="og:image:width" content="<?php echo $phpData->data->metadata->thumbnailWidth; ?>">
-                        <meta property="og:image:height" content="<?php echo $phpData->data->metadata->thumbnailHeight; ?>">
+                        <meta property="og:image" content="<?php echo $baseUrl . $urlFilePath . '/' . $phpData->data->id . $fileExtension; ?>">
+                        <meta property="og:image:secure_url" content="<?php echo $baseUrl . $urlFilePath . '/' . $phpData->data->id . $fileExtension; ?>">
+                        <meta property="og:image:type" content="<?php echo $phpData->data->metadata->mimeType; ?>">
+                        <meta property="og:image:width" content="<?php echo $phpData->data->metadata->width; ?>">
+                        <meta property="og:image:height" content="<?php echo $phpData->data->metadata->height; ?>">
                         <meta property="og:updated_time" content="<?php echo gmdate("Y-m-d\TH:i:s\Z", $phpData->data->dateAltered); ?>">
                         <meta name="twitter:card" content="image">
-                        <meta name="twitter:image" content="<?php echo $baseUrl . $urlFilePath . $urlThumbnailSuffix; ?>">
+                        <meta name="twitter:image" content="<?php echo $baseUrl . $urlFilePath; ?>">
                     <?php
                     break;
                 /*case 'audio':
@@ -164,7 +166,7 @@
                 <section id="pageTitleContainer">
                     <div class="leftRight">
                         <h4><?php echo $phpData->data->name . '.' . $phpData->data->type; ?></h4>
-                        <a class="asButton" href="<?php echo $baseUrl . $urlFilePath . '/' . $phpData->data->id; ?>" target="_blank">Download</a>
+                        <a class="asButton" href="<?php echo $baseUrl . $urlFilePath . '/' . $phpData->data->id . $fileExtension; ?>" target="_blank">Download</a>
                     </div>
                     <hr>
                     <br>
@@ -175,17 +177,17 @@
                         {
                             case 'video':
                                 ?>
-                                    <video controls src="<?php echo $baseUrl . $urlFilePath . '/' . $phpData->data->id; ?>"></video>
+                                    <video controls src="<?php echo $baseUrl . $urlFilePath . '/' . $phpData->data->id . $fileExtension; ?>"></video>
                                 <?php
                                 break;
                             case 'image':
                                 ?>
-                                    <img src="<?php echo $baseUrl . $urlFilePath . '/' . $phpData->data->id; ?>">
+                                    <img src="<?php echo $baseUrl . $urlFilePath . '/' . $phpData->data->id . $fileExtension; ?>">
                                 <?php
                                 break;
                             case 'audio':
                                 ?>
-                                    <audio controls src="<?php echo $baseUrl . $urlFilePath . '/' . $phpData->data->id; ?>"></audio>
+                                    <audio controls src="<?php echo $baseUrl . $urlFilePath . '/' . $phpData->data->id . $fileExtension; ?>"></audio>
                                 <?php
                                 break;
                             case 'text':

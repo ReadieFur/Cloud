@@ -21,4 +21,5 @@ class VideoMetaData extends MetaData
     public $thumbnailMimeType;
     public $thumbnailWidth;
     public $thumbnailHeight;
+    public $thumbnailSize;
 }

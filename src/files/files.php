@@ -158,6 +158,7 @@ class Files
                 list($thumbnailWidth, $thumbnailHeight) = getimagesize(Files::FILE_PATH . '/' . $id . Files::THUMBNAIL_SUFFIX);
                 $metaData->thumbnailWidth = $thumbnailWidth;
                 $metaData->thumbnailHeight = $thumbnailHeight;
+                $metaData->thumbnailSize = filesize(Files::FILE_PATH . '/' . $id . Files::THUMBNAIL_SUFFIX);
                 #endregion
     
                 #region Get the video metadata.

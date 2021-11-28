@@ -34,5 +34,9 @@ export interface IVideoMetaData extends IMetaData
     width: number,
     height: number,
     frameRate: number,
-    duration: number
+    duration: number,
+    thumbnailMimeType: string,
+    thumbnailWidth: number,
+    thumbnailHeight: number,
+    thumbnailSize: number
 }

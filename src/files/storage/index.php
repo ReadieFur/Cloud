@@ -33,20 +33,27 @@ class File
         {
             //Check if the user is allowed to access the file.
             $uri = array_filter(explode('/', $_SERVER['REQUEST_URI']), fn($part) => !is_null($part) && $part !== '');
+            $uriPartExploded = explode('.', $uri[count($uri)], 2);
+            if (count($uriPartExploded) !== 2 || empty($uriPartExploded[0]))
+            {
+                http_response_code(404);
+                exit();
+            }
             $id = '';
+            // $extension = $uriPartExploded[1];
             $getThumbnail = false;
-            if ($uri[count($uri) - 2] === 'storage' && !ctype_space($uri[count($uri) - 1]) && $uri[count($uri)] === 'thumbnail')
+            if ($uri[count($uri) - 2] === 'storage' && !ctype_space($uri[count($uri) - 1]) && $uriPartExploded[0] === 'thumbnail')
             {
                 $id = $uri[count($uri) - 1];
                 $getThumbnail = true;
             }
             else if ($uri[count($uri) - 1] === 'storage' && !ctype_space($uri[count($uri)]))
             {
-                $id = $uri[count($uri)];
+                $id = $uriPartExploded[0];
             }
             else
             {
-                http_response_code(403);
+                http_response_code(404);
                 exit();
             }
     
@@ -108,7 +115,7 @@ class File
                 {
                     $fileData->id = $_SESSION['id'] = strval($files->data[0]->id) . File::THUMBNAIL_SUFFIX;
                     $fileData->name = $_SESSION['name'] = $files->data[0]->name . File::THUMBNAIL_SUFFIX;
-                    $fileData->type = $_SESSION['type'] = mime_content_type(File::FILE_PATH . '/' . $files->data[0]->id . File::THUMBNAIL_SUFFIX);
+                    $fileData->type = $_SESSION['type'] = explode('/', mime_content_type(File::FILE_PATH . '/' . $files->data[0]->id . File::THUMBNAIL_SUFFIX))[1];
                     $fileData->size = $_SESSION['size'] = filesize(File::FILE_PATH . '/' . $files->data[0]->id . File::THUMBNAIL_SUFFIX);
                 }
             }
@@ -157,7 +164,7 @@ class FileStream
     {
         ob_get_clean();
         header("Content-Type: " . mime_content_type($this->path));
-        header("Content-Disposition: filename=\"" . $this->name . "." . $this->type . "\"");
+        header("Content-Disposition: attachment; filename=\"" . $this->name . "." . $this->type . "\"");
         header("Cache-Control: max-age=2592000, public");
         header("Expires: " . gmdate('D, d M Y H:i:s', time()+2592000) . ' GMT');
         header("Last-Modified: " . gmdate('D, d M Y H:i:s', @filemtime($this->path)) . ' GMT' );

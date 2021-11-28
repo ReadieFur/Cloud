@@ -8,12 +8,11 @@ class View
     public static readonly urlFilePath = `${Main.WEB_ROOT}/files/storage`;
     public static readonly urlThumbnailSuffix = "/thumbnail";
 
-    private contentContainer: HTMLSpanElement;
+    private contentContainer?: HTMLSpanElement;
     
     constructor()
     {
         new Main();
-        this.contentContainer = Main.ThrowIfNullOrUndefined(document.querySelector("#contentContainer")) as HTMLSpanElement;
     }
 
     public async Init()
@@ -43,30 +42,34 @@ class View
                 window.location.href = `${Main.WEB_ROOT}/`;
             }
         }
-
-        var file: Interfaces.IFile = parsedPHPData.data;
-        switch (file.metadata.mimeType.split("/")[0])
+        else
         {
-            // case "video":
-            //     break;
-            // case "image":
-            //     break;
-            // case "audio":
-            //     break;
-            case "text":
-                Main.XHR({url: `${View.urlFilePath}/${file.name}`, method: "GET"})
-                .then((result: { xhr: XMLHttpRequest; response: string; }) =>
-                {
-                    var pre = document.createElement("pre");
-                    pre.innerText = result.response;
-                    pre.classList.add("light");
-                    this.contentContainer.appendChild(pre);
-                }).catch(err => { Main.Alert("Error loading content."); });
-                break;
-            default:
-                break;
-        }
+            this.contentContainer = Main.ThrowIfNullOrUndefined(document.querySelector("#contentContainer")) as HTMLSpanElement;
 
+            var file: Interfaces.IFile = parsedPHPData.data;
+            switch (file.metadata.mimeType.split("/")[0])
+            {
+                // case "video":
+                //     break;
+                // case "image":
+                //     break;
+                // case "audio":
+                //     break;
+                case "text":
+                    Main.XHR({url: `${View.urlFilePath}/${file.name}.${file.type}`, method: "GET"})
+                    .then((result: { xhr: XMLHttpRequest; response: string; }) =>
+                    {
+                        var pre = document.createElement("pre");
+                        pre.innerText = result.response;
+                        pre.classList.add("light");
+                        this.contentContainer!.appendChild(pre);
+                    }).catch(err => { Main.Alert("Error loading content."); });
+                    break;
+                default:
+                    break;
+            }
+        }
+        
         return this;
     }
 }
