@@ -448,7 +448,7 @@ class Files
             this.sharingMenu.unsavedChangesNotice.style.display = "block";
             SetShareType(parseInt(this.sharingMenu.sharingTypes.value) as Interfaces.IFile["shareType"]);
         };
-        this.sharingMenu.sharingLink.onclick = () => { navigator.clipboard.writeText(`${window.location.origin}${Main.WEB_ROOT}/files/view/${file.id}`); };
+        this.sharingMenu.sharingLink.onclick = () => { navigator.clipboard.writeText(`${window.location.origin}${Main.WEB_ROOT}/files/view/${file.id}/`); };
         this.sharingMenu.saveButton.onclick = () => { this.SaveSharingOptions(file); };
 
         this.sharingMenu.unsavedChangesNotice.style.display = "none";

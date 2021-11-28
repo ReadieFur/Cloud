@@ -14,7 +14,7 @@
 
     $baseUrl = $_SERVER['REQUEST_SCHEME'] . '://' . $_SERVER['HTTP_HOST'];
     $urlFilePath = $WEB_ROOT . '/files/storage';
-    $urlThumbnailSuffix . $thumbnailExtension = '/thumbnail';
+    $urlThumbnailSuffix = '/thumbnail';
     $localFilePath = __DIR__ . '/../storage/userfiles';
     $localThumbnailSuffix = '_thumbnail';
 
