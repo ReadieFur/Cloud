@@ -4,6 +4,7 @@
     global $ogType;
     global $title;
     global $description;
+    global $themeColour;
     $DirName = ltrim(ucwords(str_replace("_", " ", basename($REQUEST_URI))));
 ?>
 <meta charset="UTF-8">
@@ -14,6 +15,7 @@
 <meta property="og:description" content="<?php echo $description != null ? $description : $DirName; ?>"/>
 <meta property="og:url" content="https://readie.global-gaming.co<?php echo $REQUEST_URI; ?>"/>
 <meta property="og:image" content="https://cdn.global-gaming.co/images/team/members/readiecircle.png"/>
+<meta name="theme-color" content="<?php echo $themeColour != null ? $themeColour : "#6400ff" ?>">
 <title><?php echo $title != null ? $title : "$DirName | Cloud"; ?></title>
 <link rel="icon" href="https://cdn.global-gaming.co/images/team/members/readiecircle.png" type="image/png">
 <link href="https://cdn.global-gaming.co/resources/fonts/montserrat/stylesheet.css" rel="stylesheet" type="text/css"> <!--Main font-->

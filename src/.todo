@@ -7,8 +7,6 @@ Todo:
     ☐ Add a file size limit to the upload form (currently set by the php/nginx max upload variable).
     ☐ Add folders and thumbnails.
     ☐ Store the file row element in memory so that it does not need to be queried and can be accessed easier. This will be necessary for when I will want to add a function for when files are updated as it would make the code neater, less repetitive, and could help with if files are updated elsewhere.
-    ☐ Return file details on the storage page.
-    ☐ Fix the meta tags on the view page.
     
 Completed:
     ✔ File type text check. @done(21-06-01 13:49)
@@ -26,6 +24,7 @@ Completed:
     ✔ Middle click to open a file in a new tab @done(21-11-20 21:42)
     ✔ Normal click on a file opens a preview window, if the file cannot be previewed then say it cannot be previewed in the previewer. Also add a link to view the file externally as well as download it. An easy solution is to use and IFrame with the view file page. @done(21-11-20 21:42)
     ✔ Remove the text transform on the file name for the view file page. @done(21-11-20 21:44)
+    ✔ Fix the meta tags (to work with discord embeds) on the view page (for images). @done(21-11-29 01:09)
 
 Cancelled:
     ✘ Download files through JS. @cancelled(21-06-01 15:36)

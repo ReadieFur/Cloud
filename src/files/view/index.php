@@ -98,8 +98,10 @@
     <?php
         if (!$phpData->error)
         {
-            //Value set here to be used in head.php
+            //Values set here to be used in head.php
             $ogType = $mimeTypeExploded[0] . '.' . $mimeTypeExploded[1];
+            $themeColour = "#ff7800";
+
             $fileExtension = '.' . $mimeTypeExploded[1];
 
             switch ($mimeTypeExploded[0])
@@ -136,8 +138,10 @@
                         <meta property="og:image:width" content="<?php echo $phpData->data->metadata->width; ?>">
                         <meta property="og:image:height" content="<?php echo $phpData->data->metadata->height; ?>">
                         <meta property="og:updated_time" content="<?php echo gmdate("Y-m-d\TH:i:s\Z", $phpData->data->dateAltered); ?>">
-                        <meta name="twitter:card" content="image">
                         <meta name="twitter:image" content="<?php echo $baseUrl . $urlFilePath; ?>">
+                        <meta property="twitter:image:width" content="<?php echo $phpData->data->metadata->width; ?>">
+                        <meta property="twitter:image:height" content="<?php echo $phpData->data->metadata->height; ?>">
+                        <meta name="twitter:card" content="summary_large_image">
                     <?php
                     break;
                 /*case 'audio':
