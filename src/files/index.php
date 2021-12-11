@@ -51,8 +51,15 @@
                         </tr>
                     </tbody>
                     <!--There are no options for public sharing-->
-                    <!-- <tbody id="publicSharing">
-                    </tbody> -->
+                    <tbody id="publicSharing">
+                        <tr>
+                            <td>
+                                <p>Expiry Date:</p>
+                                <input type="datetime-local" id="publicExpiryTime">
+                                <br><br>
+                            </td>
+                        </tr>
+                    </tbody>
                 </table>
             </form>
             <p id="unsavedSharingChangesNotice" class="light">You have unsaved changes!</p>

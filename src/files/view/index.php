@@ -75,7 +75,21 @@
                 }
             }
         }
-        else
+        else if ($files->data[0]->publicExpiryTime != -1 && time() > $files->data[0]->publicExpiryTime) //Public but with an expiry time.
+        {
+            //Verify the users session
+            $sessionValid = AccountFunctions::VerifySession();
+            if ($sessionValid->error) { $phpData = $sessionValid; }
+
+            //User is owner.
+            if ($sessionValid->data && $_COOKIE['READIE_UID'] === $files->data[0]->uid)
+            {
+                $files->data[0]->metadata = json_decode($files->data[0]->metadata);
+                $phpData = new ReturnData($files->data[0]);
+            }
+            else { $phpData = new ReturnData('INVALID_CREDENTIALS', true); }
+        }
+        else //Public
         {
             $files->data[0]->metadata = json_decode($files->data[0]->metadata);
             $phpData = new ReturnData($files->data[0]);

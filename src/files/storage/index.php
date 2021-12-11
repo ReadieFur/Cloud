@@ -99,6 +99,17 @@ class File
                     }
                 }
             }
+            else if ($files->data[0]->publicExpiryTime != -1 && time() > $files->data[0]->publicExpiryTime) //Public but with an expiry time.
+            {
+                //Verify the users session
+                $sessionValid = AccountFunctions::VerifySession();
+                if ($sessionValid->error) { http_response_code(403); exit(); }
+                else if ($sessionValid->data && $_COOKIE['READIE_UID'] !== $files->data[0]->uid)
+                {
+                    http_response_code(401);
+                    exit();
+                }
+            }
 
             if (session_status() == PHP_SESSION_NONE)
             {

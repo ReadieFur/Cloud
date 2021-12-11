@@ -6,6 +6,7 @@ CREATE TABLE `cloud_files` (
     `size` varchar(128) NOT NULL DEFAULT '0',
     `metadata` varchar(256) NOT NULL,
     `shareType` tinyint(4) NOT NULL DEFAULT '0' COMMENT '0 - private,\r\n1 - invite,\r\n2 - public',
+    `publicExpiryTime` varchar(32) NOT NULL DEFAULT '-1',
     `dateAltered` varchar(32) NOT NULL,
     FOREIGN KEY (`uid`) REFERENCES `cloud_permissions`(`uid`)
 )

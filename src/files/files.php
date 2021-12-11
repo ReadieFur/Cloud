@@ -188,6 +188,7 @@ class Files
             'size'=>$_files['inputFile']['size'],
             'metadata'=>json_encode($metaData),
             'shareType'=>'0',
+            'publicExpiryTime'=>'-1',
             'dateAltered'=>Time()
         );
 
@@ -235,6 +236,7 @@ class Files
             !isset($_data['type']) ||
             !isset($_data['size']) ||
             !isset($_data['shareType']) ||
+            !isset($_data['publicExpiryTime']) ||
             !isset($_data['sharedWith'])
         )
         { return new ReturnData('INVALID_DATA', true); }
@@ -245,12 +247,17 @@ class Files
         else if ($_COOKIE['READIE_UID'] !== $files->data[0]->uid) { return new ReturnData('INVALID_PERMISSIONS', true); }
 
         if (!($_data['shareType'] == 0 || $_data['shareType'] == 1 || $_data['shareType'] == 2)) { return new ReturnData('INVALID_DATA' . $_data["shareType"], true); }
+        
+        $publicExpiryTime = intval($_data['publicExpiryTime']);
+        if ($publicExpiryTime == 0) { return new ReturnData('INVALID_DATA', true); }
+        else if ($publicExpiryTime < 0) { $publicExpiryTime = -1; }
 
         $updatedFileResponse = $this->filesTable->Update(
             array(
                 'name'=>$this->GetValidFileName($_data['name']),
                 'type'=>$this->GetValidFileType($_data['type']),
                 'shareType'=>$_data['shareType'],
+                'publicExpiryTime'=>$publicExpiryTime,
                 'dateAltered'=>Time()
             ),
             array(

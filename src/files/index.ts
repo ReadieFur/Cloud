@@ -33,6 +33,11 @@ class Files
                 usernameInput: HTMLInputElement,
                 inviteListElement: HTMLUListElement,
                 inviteList: string[]
+            },
+            publicOptions:
+            {
+                container: HTMLTableSectionElement,
+                publicSharingTimeInput: HTMLInputElement
             }
         },
         unsavedChangesNotice: HTMLParagraphElement,
@@ -72,6 +77,11 @@ class Files
                     usernameInput: Main.ThrowIfNullOrUndefined(document.querySelector("#inviteUser")),
                     inviteListElement: Main.ThrowIfNullOrUndefined(document.querySelector("#inviteList")),
                     inviteList: []
+                },
+                publicOptions:
+                {
+                    container: Main.ThrowIfNullOrUndefined(document.querySelector("#publicSharing")),
+                    publicSharingTimeInput: Main.ThrowIfNullOrUndefined(document.querySelector("#publicExpiryTime"))
                 }
             },
             unsavedChangesNotice: Main.ThrowIfNullOrUndefined(document.querySelector("#unsavedSharingChangesNotice")),
@@ -207,6 +217,7 @@ class Files
             },
             shareType: 0,
             sharedWith: [],
+            publicExpiryTime: -1,
             dateAltered: new Date().getTime(),
         }, true);
         fileRow.classList.add("uploading");
@@ -371,6 +382,7 @@ class Files
         responseData.files.forEach(file =>
         {
             file.dateAltered *= 1000;
+            file.publicExpiryTime *= 1000;
             var fileRow = this.CreateFileRow(file);
             this.filesBody.appendChild(fileRow);
         });
@@ -425,17 +437,27 @@ class Files
         const instance = this;
         function SetShareType(type: Interfaces.IFile["shareType"])
         {
+            instance.sharingMenu.subMenus.inviteOptions.container.style.display = "none";
+            instance.sharingMenu.subMenus.publicOptions.container.style.display = "none";
+
             switch (type.toString())
             {
-                case "1":
+                case "1": //Invite
                     instance.sharingMenu.subMenus.inviteOptions.container.style.display = "table-row-group";
                     if (file.sharedWith !== undefined) { file.sharedWith.forEach(username => { instance.AddUserToInviteList(username); }); }
                     break;
-                case "2":
-                    instance.sharingMenu.subMenus.inviteOptions.container.style.display = "none";
+                case "2": //Public
+                    instance.sharingMenu.subMenus.publicOptions.container.style.display = "table-row-group";
+                    if (file.publicExpiryTime != -1)
+                    {
+                        instance.sharingMenu.subMenus.publicOptions.publicSharingTimeInput.value = Files.FormatUnixToFormDate(file.publicExpiryTime);
+                    }
+                    else
+                    {
+                        instance.sharingMenu.subMenus.publicOptions.publicSharingTimeInput.value = "";
+                    }
                     break;
-                default: //0
-                    instance.sharingMenu.subMenus.inviteOptions.container.style.display = "none";
+                default: //0 (Private)
                     break;
             }
         }
@@ -448,6 +470,7 @@ class Files
             this.sharingMenu.unsavedChangesNotice.style.display = "block";
             SetShareType(parseInt(this.sharingMenu.sharingTypes.value) as Interfaces.IFile["shareType"]);
         };
+        this.sharingMenu.subMenus.publicOptions.publicSharingTimeInput.onchange = () => { this.sharingMenu.unsavedChangesNotice.style.display = "block"; }
         this.sharingMenu.sharingLink.onclick = () => { navigator.clipboard.writeText(`${window.location.origin}${Main.WEB_ROOT}/files/view/${file.id}/`); };
         this.sharingMenu.saveButton.onclick = () => { this.SaveSharingOptions(file); };
 
@@ -457,15 +480,18 @@ class Files
     private SaveSharingOptions(file: Interfaces.IFile)
     {
         var shareType: Interfaces.IFile["shareType"];
+        var publicExpiryTime = -1;
         switch (this.sharingMenu.sharingTypes.value)
         {
-            case "1":
+            case "1": //Invite
                 shareType = 1;
                 break;
-            case "2":
+            case "2": //Public
                 shareType = 2;
+                var parsedDate = Date.parse(this.sharingMenu.subMenus.publicOptions.publicSharingTimeInput.value) / 1000;
+                if (!isNaN(parsedDate)) { publicExpiryTime = parsedDate; }
                 break;
-            default: //0
+            default: //0 (Private)
                 shareType = 0;
                 break;
         }
@@ -478,6 +504,7 @@ class Files
             type: file.type,
             size: file.size,
             shareType: shareType,
+            publicExpiryTime: publicExpiryTime,
             sharedWith: this.sharingMenu.subMenus.inviteOptions.inviteList
         };
 
@@ -495,12 +522,14 @@ class Files
                 }
 
                 const updatedFileResponse: Interfaces.IFile = response.data;
+                updatedFileResponse.publicExpiryTime *= 1000;
 
-                var shareButton: HTMLButtonElement = Main.ThrowIfNullOrUndefined(document.querySelector(`#file_${file.id} > .optionsColumn > .joinButtons > .shareButton`)) as HTMLButtonElement;
+                const shareButton: HTMLButtonElement = Main.ThrowIfNullOrUndefined(document.querySelector(`#file_${file.id} > .optionsColumn > .joinButtons > .shareButton`)) as HTMLButtonElement;
                 if (updatedFileResponse.shareType == 0) { shareButton.classList.remove("active"); }
                 else { shareButton.classList.add("active"); }
                 shareButton.onclick = async () =>
                 {
+
                     this.SetSharingUIContents(updatedFileResponse);
                     await Main.FadeElement("block", this.sharingMenu.container);
                 };
@@ -508,6 +537,10 @@ class Files
                 this.sharingMenu.subMenus.inviteOptions.inviteList = [];
                 this.sharingMenu.subMenus.inviteOptions.inviteListElement.innerHTML = "";
                 updatedFileResponse.sharedWith.forEach(username => { this.AddUserToInviteList(username); });
+
+                if (updatedFileResponse.publicExpiryTime != -1)
+                { this.sharingMenu.subMenus.publicOptions.publicSharingTimeInput.value = Files.FormatUnixToFormDate(updatedFileResponse.publicExpiryTime); }
+                else { this.sharingMenu.subMenus.publicOptions.publicSharingTimeInput.value = ""; }
 
                 this.sharingMenu.unsavedChangesNotice.style.display = "none";
             }
@@ -729,6 +762,17 @@ class Files
                 Main.AccountMenuToggle(false);
             }
         }
+    }
+
+    public static FormatUnixToFormDate(unixTime: number): string
+    {
+        //Element value format: YYYY-MM-DDTHH:mm
+        const date = new Date(unixTime);
+        return `${date.getFullYear()}-${
+            (date.getMonth() + 1) < 10 ? "0" + date.getMonth().toString() : date.getMonth()}-${
+            date.getDate() < 10 ? "0" + date.getDate().toString() : date.getDate()}T${
+            date.getHours() < 10 ? "0" + date.getHours().toString() : date.getHours()}:${
+            date.getMinutes() < 10 ? "0" + date.getMinutes().toString() : date.getMinutes()}`;
     }
 }
 new Files();

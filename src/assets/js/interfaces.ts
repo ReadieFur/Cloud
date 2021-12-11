@@ -7,6 +7,7 @@ export interface _IFile
     size: number,
     shareType: 0 | 1 | 2,
     sharedWith: string[],
+    publicExpiryTime: number
 }
 
 //This contains extra properties that are received from the server, but are not needed when sending data to the server.
