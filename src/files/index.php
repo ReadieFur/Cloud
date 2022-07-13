@@ -12,7 +12,7 @@
 <head>
     <?php echo execAndRead("{$SITE_ROOT}/assets/php/head.php"); ?>
     <link rel="stylesheet" href="./index.css">
-    <script src="https://cdn.global-gaming.co/resources/scripts/jquery/jquery.form.min.js"></script>
+    <script src="https://cdn-readie.global-gaming.co/resources/scripts/jquery/jquery.form.min.js"></script>
     <script src="./index.js" type="module"></script>
 </head>
 <header id="header"><?php echo execAndRead("{$SITE_ROOT}/assets/php/header.php"); ?></header>
